@@ -6,19 +6,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class Facilitator extends Model
 {
-    protected $table = 'facilitator_profile';
+    protected $table = 'facilitators'; // Fixed table name from facilitator_profile to facilitators
 
     protected $fillable = [
         'user_id',
+        'skills',
+        'bank_name',
+        'bank_account_number',
         'phone_number',
-        'address',
-        'bio',
-        'profile_picture',
-        'skills', // Added skills
+        'experience',
+        'join_date',
+    ];
+
+    protected $casts = [
+        'join_date' => 'date',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(PerformanceReview::class);
     }
 }

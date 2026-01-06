@@ -54,8 +54,9 @@ class RecommendationVerificationSeeder extends Seeder
             Facilitator::create([
                 'user_id' => $user->id,
                 'skills' => $profile['skills'],
-                'bio' => $profile['bio'],
-                'profile_picture' => null,
+                'experience' => $profile['bio'], // Use bio as experience for consistency
+                'phone_number' => '555-' . rand(1000, 9999),
+                'join_date' => now()->subMonths(rand(1, 24)),
             ]);
         }
 
@@ -63,24 +64,25 @@ class RecommendationVerificationSeeder extends Seeder
         // 2. Create 10 Various Events
         // ----------------------------------------------------------------
         $events = [
-            ['name' => 'Adv. Laravel Bootcamp', 'desc' => 'Deep dive into Service Containers and Eloquent.', 'skills' => 'PHP Laravel Backend'],
-            ['name' => 'Cloud Summit 2025', 'desc' => 'Deploying scalable apps on AWS.', 'skills' => 'AWS Cloud Docker'],
-            ['name' => 'UI Design Workshop', 'desc' => 'Mastering Figma for web design.', 'skills' => 'Figma UI/UX Design'],
-            ['name' => 'Agile Leadership', 'desc' => 'Leading teams effectively using Scrum.', 'skills' => 'Leadership Agile Scrum'],
-            ['name' => 'Cyber Defense Con', 'desc' => 'Protecting against modern threats.', 'skills' => 'Cybersecurity Hacking'],
-            ['name' => 'Corporate Wellness', 'desc' => 'Yoga and meditation for employees.', 'skills' => 'Yoga Health Meditation'],
-            ['name' => 'Java Enterprise', 'desc' => 'Building large scale systems with Spring.', 'skills' => 'Java Spring'],
-            ['name' => 'Frontend Masters', 'desc' => 'Advanced React patterns.', 'skills' => 'React Javascript Frontend'],
-            ['name' => 'Financial Planning', 'desc' => 'Managing corporate assets.', 'skills' => 'Finance Excel'],
-            ['name' => 'Public Speaking 101', 'desc' => 'Overcome stage fright.', 'skills' => 'Public Speaking Communication'],
+            ['name' => 'Adv. Laravel Bootcamp', 'skills' => 'PHP Laravel Backend'],
+            ['name' => 'Cloud Summit 2025', 'skills' => 'AWS Cloud Docker'],
+            ['name' => 'UI Design Workshop', 'skills' => 'Figma UI/UX Design'],
+            ['name' => 'Agile Leadership', 'skills' => 'Leadership Agile Scrum'],
+            ['name' => 'Cyber Defense Con', 'skills' => 'Cybersecurity Hacking'],
+            ['name' => 'Corporate Wellness', 'skills' => 'Yoga Health Meditation'],
+            ['name' => 'Java Enterprise', 'skills' => 'Java Spring'],
+            ['name' => 'Frontend Masters', 'skills' => 'React Javascript Frontend'],
+            ['name' => 'Financial Planning', 'skills' => 'Finance Excel'],
+            ['name' => 'Public Speaking 101', 'skills' => 'Public Speaking Communication'],
         ];
 
         foreach ($events as $evt) {
             Event::create([
                 'event_name' => $evt['name'],
-                'event_description' => $evt['desc'],
-                'skills' => $evt['skills'],
-                'event_start_date' => now()->addDays(rand(1, 30)),
+                'venue' => 'Main Conference Hall',
+                'required_skill_tag' => $evt['skills'],
+                'start_date_time' => now()->addDays(rand(1, 30)),
+                'quota' => 50
             ]);
         }
 

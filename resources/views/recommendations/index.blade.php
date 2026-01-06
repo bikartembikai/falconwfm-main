@@ -18,8 +18,9 @@
 
     <div class="event-header">
         <h1>{{ $event->event_name }}</h1>
-        <p><strong>Description:</strong> {{ $event->event_description }}</p>
-        <p><strong>Required Skills:</strong> {{ $event->skills }}</p>
+        <p><strong>Venue:</strong> {{ $event->venue }}</p>
+        <p><strong>Required Skills:</strong> {{ $event->required_skill_tag }}</p>
+        <p><strong>Date:</strong> {{ $event->start_date_time }}</p>
     </div>
 
     <h2>Top Recommended Facilitators</h2>
@@ -32,7 +33,7 @@
                 <div class="score">{{ $rec['match_score'] }}%</div>
                 <div class="details">
                     <h3>{{ $rec['name'] }}</h3>
-                    <p>{{ Str::limit($rec['bio'], 100) }}</p>
+                    <p><strong>Experience:</strong> {{ Str::limit($rec['experience'], 100) }}</p>
                     <div class="skills"><strong>Skills:</strong> {{ $rec['skills'] }}</div>
                 </div>
             </div>

@@ -11,16 +11,26 @@ class Event extends Model
 
     protected $fillable = [
         'event_name',
-        'event_description',
-        'event_location',
-        'event_type',
-        'event_start_date',
-        'event_end_date',
-        'skills', // Added skills
+        'venue',
+        'required_skill_tag',
+        'status',
+        'quota',
+        'start_date_time',
+        'end_date_time',
     ];
 
     protected $casts = [
-        'event_start_date' => 'datetime',
-        'event_end_date' => 'datetime',
+        'start_date_time' => 'datetime',
+        'end_date_time' => 'datetime',
     ];
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
 }

@@ -9,61 +9,101 @@ class RecommendationService
     /**
      * Main function to get recommendations
      */
+    /**
+     * Recommend Facilitators for an Event
+     */
     public function recommend($eventRequirements, $limit = 5)
     {
         // 1. Fetch all facilitators from DB
-        $facilitators = Facilitator::all();
+        $facilitators = Facilitator::with('user')->get(); // Eager load user
         
         $documents = [];
         $ids = [];
 
-        // 2. Prepare the "Corpus" (The list of all text)
+        // 2. Prepare the Corpus
         foreach ($facilitators as $facil) {
-            // Combine relevant text fields (Skills + Bio)
-            // Ensure data is clean (lowercase)
-            $text = strtolower(($facil->skills ?? '') . ' ' . ($facil->bio ?? ''));
-            // Skip empty profiles to avoid errors
-            if (trim($text) === '') {
-                continue;
-            }
+            // New schema: skills + experience
+            $text = strtolower(($facil->skills ?? '') . ' ' . ($facil->experience ?? ''));
+            
+            if (trim($text) === '') continue;
+            
             $documents[$facil->id] = $this->tokenize($text);
             $ids[] = $facil->id;
         }
 
-        // Add the Event Requirements as the last "document" to compare against
         $eventTokens = $this->tokenize(strtolower($eventRequirements));
         
-        // If no facilitators have enough data, return empty
-        if (empty($documents)) {
-            return [];
-        }
+        if (empty($documents)) return [];
 
-        // 3. Calculate TF-IDF
-        // This generates the "Math Vectors" for everyone
+        // 3. TF-IDF & Cosine
         $vectors = $this->calculateTfidf($documents, $eventTokens);
         
-        // 4. Calculate Cosine Similarity
-        // The last vector is our Event. Compare it against all others.
-        // We use the key 'EVENT_QUERY' to identify it reliably
         $eventVector = $vectors['EVENT_QUERY'];
         unset($vectors['EVENT_QUERY']);
 
         $scores = [];
-
         foreach ($vectors as $facilId => $vector) {
             $scores[$facilId] = $this->cosineSimilarity($eventVector, $vector);
         }
 
-        // 5. Sort by Highest Score
         arsort($scores);
 
-        // 6. Return top matches with details
-        return $this->formatResults($scores, $facilitators, $limit);
+        return $this->formatFacilitatorResults($scores, $facilitators, $limit);
     }
 
-    // ----------------------------------------------------------------
-    // THE MATH ENGINE (Pure PHP Implementation of AI Logic)
-    // ----------------------------------------------------------------
+    /**
+     * Recommend Events for a Facilitator (New Bidirectional Feature)
+     */
+    public function recommendEvents($facilitatorId, $limit = 5)
+    {
+        $facilitator = Facilitator::find($facilitatorId);
+        if (!$facilitator) return [];
+
+        // Facilitator Profile Text
+        $facilitatorText = strtolower(($facilitator->skills ?? '') . ' ' . ($facilitator->experience ?? ''));
+        $facilitatorTokens = $this->tokenize($facilitatorText);
+
+        // Fetch all upcoming events
+        $events = \App\Models\Event::where('status', 'upcoming')->get();
+        if ($events->isEmpty()) return [];
+
+        $documents = [];
+        foreach ($events as $event) {
+            // Event Profile: Name + Description (venue?) + Required Skills
+            // Note: Event Description removed in new schema? Name + Required Skills is key.
+            $text = strtolower($event->event_name . ' ' . $event->required_skill_tag);
+            $documents[$event->id] = $this->tokenize($text);
+        }
+
+        // Add Facilitator as the "Query" document
+        $documents['FACILITATOR_QUERY'] = $facilitatorTokens;
+
+        // Calculate
+        $vectors = $this->calculateTfidf($documents, []); // 2nd arg unused here really, simplified logic below could be better but reusing func
+        
+        // TF-IDF logic needs slight adjusting for "Query" being inside documents or separate.
+        // Let's reuse calculateTfidf but pass Facilitator Tokens as the "EventTokens" arg effectively
+        // Actually, my calculateTfidf merges the 2nd arg.
+        
+        // RE-CALL properly:
+        // Generic approach: (All Docs, Query Tokens)
+        unset($documents['FACILITATOR_QUERY']); // Remove from list, pass as query
+        $vectors = $this->calculateTfidf($documents, $facilitatorTokens);
+
+        $queryVector = $vectors['EVENT_QUERY']; // calculateTfidf names key 'EVENT_QUERY'
+        unset($vectors['EVENT_QUERY']);
+
+        $scores = [];
+        foreach ($vectors as $eventId => $vector) {
+            $scores[$eventId] = $this->cosineSimilarity($queryVector, $vector);
+        }
+
+        arsort($scores);
+
+        return $this->formatEventResults($scores, $events, $limit);
+    }
+
+    // ... Math Engine ... (Tokenize, Tfidf, Cosine - Unchanged, keeping helper methods below)
 
     /**
      * Helper: Convert string to array of words
@@ -86,11 +126,10 @@ class RecommendationService
     /**
      * Step 3: Calculate Term Frequency - Inverse Document Frequency
      */
-    private function calculateTfidf($facilitatorDocs, $eventTokens)
+    private function calculateTfidf($docs, $queryTokens)
     {
-        // Combine all docs to build a "Vocabulary" (Unique words)
-        $allDocs = $facilitatorDocs;
-        $allDocs['EVENT_QUERY'] = $eventTokens;
+        $allDocs = $docs;
+        $allDocs['EVENT_QUERY'] = $queryTokens; // Always use this key for the query vector
         
         // 1. Build Vocabulary
         $vocabulary = [];
@@ -101,7 +140,7 @@ class RecommendationService
         }
         $vocabularyKeys = array_keys($vocabulary);
 
-        // 2. Calculate IDF (How rare is a word?)
+        // 2. Calculate IDF 
         $idf = [];
         $totalDocs = count($allDocs);
         
@@ -110,25 +149,18 @@ class RecommendationService
             foreach ($allDocs as $doc) {
                 if (in_array($term, $doc)) $docCount++;
             }
-            // Logarithmic scale (standard IDF formula)
-            // Add 1 to denominator to avoid division by zero if term not found (unlikely here but safe)
-            $idf[$term] = log($totalDocs / (1 + $docCount)) + 1; // +1 to ensure positive IDF
+            $idf[$term] = log($totalDocs / (1 + $docCount)) + 1; 
         }
 
-        // 3. Calculate TF-IDF Vectors
+        // 3. Calculate Vectors
         $vectors = [];
         foreach ($allDocs as $key => $doc) {
             $vector = [];
-            
-            // Count word frequency in this specific document
             $termCounts = array_count_values($doc);
             $docLength = count($doc);
             
             if ($docLength == 0) {
-                 // Handle empty document case
-                 foreach ($vocabularyKeys as $term) {
-                    $vector[] = 0;
-                 }
+                 foreach ($vocabularyKeys as $term) $vector[] = 0;
             } else {
                 foreach ($vocabularyKeys as $term) {
                     $tf = isset($termCounts[$term]) ? ($termCounts[$term] / $docLength) : 0;
@@ -141,15 +173,9 @@ class RecommendationService
         return $vectors;
     }
 
-    /**
-     * Step 4: Calculate Cosine Similarity between two vectors
-     * Formula: (A . B) / (||A|| * ||B||)
-     */
     private function cosineSimilarity($vecA, $vecB)
     {
-        $dotProduct = 0;
-        $normA = 0;
-        $normB = 0;
+        $dotProduct = 0; $normA = 0; $normB = 0;
 
         foreach ($vecA as $i => $valA) {
             $valB = $vecB[$i];
@@ -159,30 +185,44 @@ class RecommendationService
         }
 
         if ($normA == 0 || $normB == 0) return 0;
-
         return $dotProduct / (sqrt($normA) * sqrt($normB));
     }
 
-    private function formatResults($scores, $facilitators, $limit)
+    private function formatFacilitatorResults($scores, $facilitators, $limit)
     {
         $results = [];
         $count = 0;
-        
         foreach ($scores as $id => $score) {
             if ($count >= $limit) break;
-            
-            // Facilitator might vary if we used 'all()' vs filtered. 
-            // Here $facilitators is a Collection.
             $facilitator = $facilitators->find($id);
-            
             if ($facilitator) {
                 $results[] = [
-                    'facilitator_id' => $facilitator->id,
-                    'name' => $facilitator->user ? $facilitator->user->name : 'Unknown', // Access via user relation
-                    'profile_picture' => $facilitator->profile_picture,
+                    'id' => $facilitator->id,
+                    'name' => $facilitator->user ? $facilitator->user->name : 'Unknown',
                     'match_score' => round($score * 100, 1), 
                     'skills' => $facilitator->skills,
-                    'bio' => $facilitator->bio
+                    'experience' => $facilitator->experience
+                ];
+                $count++;
+            }
+        }
+        return $results;
+    }
+
+    private function formatEventResults($scores, $events, $limit)
+    {
+        $results = [];
+        $count = 0;
+        foreach ($scores as $id => $score) {
+            if ($count >= $limit) break;
+            $event = $events->find($id);
+            if ($event) {
+                $results[] = [
+                    'id' => $event->id,
+                    'name' => $event->event_name,
+                    'match_score' => round($score * 100, 1),
+                    'required_skills' => $event->required_skill_tag,
+                    'start_date' => $event->start_date_time,
                 ];
                 $count++;
             }

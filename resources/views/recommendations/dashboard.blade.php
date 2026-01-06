@@ -32,16 +32,16 @@
 <div class="container">
     <h1>🎯 Content-Based Recommender Validation</h1>
     
+    <h2>Events looking for Facilitators</h2>
     <div class="grid">
         @foreach($dashboardData as $item)
             <div class="card">
                 <h2 class="event-title">{{ $item['event']->event_name }}</h2>
                 
                 <div class="event-meta">
-                    <p>{{ Str::limit($item['event']->event_description, 80) }}</p>
                     <div>
                         <strong>Required:</strong> 
-                        @foreach(explode(' ', $item['event']->skills) as $skill)
+                        @foreach(explode(' ', $item['event']->required_skill_tag) as $skill)
                             @if(!empty($skill))
                                 <span class="badge">{{ $skill }}</span>
                             @endif
@@ -70,6 +70,35 @@
             </div>
         @endforeach
     </div>
+
+    <h2 style="margin-top: 50px;">Facilitators looking for Events</h2>
+    <div class="grid">
+        @foreach($facilitatorData as $item)
+            <div class="card" style="border-top: 4px solid #3498db;">
+                <h2 class="event-title">{{ $item['facilitator']->user->name }}</h2>
+                <div class="event-meta">
+                    <p><strong>Skills:</strong> {{ Str::limit($item['facilitator']->skills, 50) }}</p>
+                    <p><strong>Exp:</strong> {{ Str::limit($item['facilitator']->experience, 50) }}</p>
+                </div>
+                
+                <h3>Recommended Events</h3>
+                <ul class="match-list">
+                    @forelse($item['matches'] as $match)
+                        <li class="match-item">
+                            <div class="score-box" style="background:#e3f2fd; color:#1565c0;">{{ $match['match_score'] }}%</div>
+                            <div class="facilitator-info">
+                                <span class="facilitator-name">{{ $match['name'] }}</span>
+                                <span class="facilitator-skills">{{ $match['required_skills'] }}</span>
+                            </div>
+                        </li>
+                    @empty
+                         <li class="no-matches">No events match profile.</li>
+                    @endforelse
+                </ul>
+            </div>
+        @endforeach
+    </div>
+
 </div>
 
 </body>
