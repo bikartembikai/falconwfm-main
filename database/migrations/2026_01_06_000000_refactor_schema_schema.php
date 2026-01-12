@@ -27,8 +27,10 @@ return new class extends Migration
             $table->string('bank_name')->nullable();
             $table->string('bank_account_number')->nullable();
             $table->string('phone_number')->nullable();
-            $table->string('experience')->nullable(); // Request: Experience
-            $table->date('join_date')->nullable();   // Request: Join Date
+            $table->string('experience')->nullable();
+            $table->date('join_date')->nullable();
+            $table->text('certifications')->nullable(); // Diagram: certifications
+            $table->float('average_rating')->default(0); // Diagram: averageRating
             $table->timestamps();
         });
 
@@ -36,11 +38,13 @@ return new class extends Migration
         Schema::dropIfExists('events');
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->string('event_name');
-            $table->string('venue')->nullable();
-            $table->text('required_skill_tag')->nullable();
-            $table->string('status')->default('upcoming'); // upcoming, ongoing, completed
-            $table->integer('quota')->default(0);
+            $table->string('event_name'); // Diagram: eventName
+            $table->string('venue')->nullable(); // Diagram: venue
+            $table->text('event_description')->nullable(); // Diagram: eventDescription
+            $table->string('event_category')->nullable(); // Diagram: eventCategory
+            $table->text('required_skill_tag')->nullable(); // Keep for logic, though diagram implies logic via category?
+            $table->string('status')->default('upcoming'); // Diagram: status
+            $table->integer('quota')->default(0); // Diagram: quota
             $table->dateTime('start_date_time');
             $table->dateTime('end_date_time')->nullable();
             $table->timestamps();

@@ -40,7 +40,10 @@ class RecommendationController extends Controller
         $eventData = [];
 
         foreach ($events as $event) {
-            $requirements = $event->event_name . ' ' . $event->required_skill_tag;
+            $requirements = $event->event_name . ' ' . 
+                            ($event->event_description ?? '') . ' ' . 
+                            ($event->event_category ?? '') . ' ' . 
+                            ($event->required_skill_tag ?? '');
             $matches = $this->recommender->recommend($requirements, 3);
             $eventData[] = ['event' => $event, 'matches' => $matches];
         }

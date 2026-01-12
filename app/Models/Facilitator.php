@@ -16,6 +16,8 @@ class Facilitator extends Model
         'phone_number',
         'experience',
         'join_date',
+        'certifications',
+        'average_rating',
     ];
 
     protected $casts = [

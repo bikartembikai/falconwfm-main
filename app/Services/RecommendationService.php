@@ -22,8 +22,12 @@ class RecommendationService
 
         // 2. Prepare the Corpus
         foreach ($facilitators as $facil) {
-            // New schema: skills + experience
-            $text = strtolower(($facil->skills ?? '') . ' ' . ($facil->experience ?? ''));
+            // New schema: skills + experience + certifications
+            $text = strtolower(
+                ($facil->skills ?? '') . ' ' . 
+                ($facil->experience ?? '') . ' ' . 
+                ($facil->certifications ?? '')
+            );
             
             if (trim($text) === '') continue;
             
@@ -60,7 +64,11 @@ class RecommendationService
         if (!$facilitator) return [];
 
         // Facilitator Profile Text
-        $facilitatorText = strtolower(($facilitator->skills ?? '') . ' ' . ($facilitator->experience ?? ''));
+        $facilitatorText = strtolower(
+            ($facilitator->skills ?? '') . ' ' . 
+            ($facilitator->experience ?? '') . ' ' .
+            ($facilitator->certifications ?? '')
+        );
         $facilitatorTokens = $this->tokenize($facilitatorText);
 
         // Fetch all upcoming events
@@ -69,9 +77,13 @@ class RecommendationService
 
         $documents = [];
         foreach ($events as $event) {
-            // Event Profile: Name + Description (venue?) + Required Skills
-            // Note: Event Description removed in new schema? Name + Required Skills is key.
-            $text = strtolower($event->event_name . ' ' . $event->required_skill_tag);
+            // Event Profile: Name + Description + Category + Required Skills
+            $text = strtolower(
+                $event->event_name . ' ' . 
+                ($event->event_description ?? '') . ' ' . 
+                ($event->event_category ?? '') . ' ' . 
+                ($event->required_skill_tag ?? '')
+            );
             $documents[$event->id] = $this->tokenize($text);
         }
 
