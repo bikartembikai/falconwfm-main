@@ -9,16 +9,25 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RecommendationController;
 
+use App\Http\Controllers\AuthController;
+
 Route::get('/', function () {
-    return redirect()->route('events.index');
+    return redirect()->route('login');
 });
+
+// Auth Routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Auth Routes (Placeholder if using Breeze/Jetstream, otherwise simple)
 Route::middleware(['web'])->group(function () {
     // Events
     Route::resource('events', EventController::class);
-    Route::post('/events/{id}/apply', [EventController::class, 'apply'])->name('events.apply');
-
+    // REMOVED 'apply' route as request by User to use Admin Assignment instead
+    
     // Facilitator Dashboard & Profile
     Route::get('/dashboard', [FacilitatorController::class, 'dashboard'])->name('facilitator.dashboard');
     Route::get('/profile/edit', [FacilitatorController::class, 'edit'])->name('facilitator.edit');
@@ -30,14 +39,12 @@ Route::middleware(['web'])->group(function () {
     Route::put('/attendance/{id}/clock-out', [AttendanceController::class, 'update'])->name('attendance.clockOut');
 
     // Assignments
-    Route::delete('/assignment/{id}', [AssignmentController::class, 'destroy'])->name('assignment.destroy');
+    Route::resource('assignments', AssignmentController::class)->only(['store', 'destroy']);
 
     // Reviews
     Route::post('/facilitator/{id}/review', [ReviewController::class, 'store'])->name('reviews.store');
 
-    // Recommendations (Legacy/Debug specific routes if needed, otherwise integrated in dashboard)
-    Route::get('/recommender/debug', [RecommendationController::class, 'dashboard']);
-
     // Admin
     Route::get('/admin/payments', [PaymentController::class, 'index'])->name('admin.payments');
+    Route::put('/admin/payments/{id}', [PaymentController::class, 'update'])->name('payments.update');
 });

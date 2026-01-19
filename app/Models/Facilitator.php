@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Facilitator extends Model
 {
-    protected $table = 'facilitators'; // Fixed table name from facilitator_profile to facilitators
-
     protected $fillable = [
         'user_id',
         'skills',
@@ -27,15 +25,5 @@ class Facilitator extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function attendances()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-
-    public function reviews()
-    {
-        return $this->hasMany(PerformanceReview::class);
     }
 }

@@ -6,7 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class PerformanceReview extends Model
 {
-    protected $fillable = ['facilitator_id', 'rating', 'feedback_comments', 'date_submitted'];
+    protected $fillable = [
+        'facilitator_id',
+        'rating',
+        'feedback_comments',
+        'role',
+        'date_submitted'
+    ];
+
+    protected $casts = [
+        'date_submitted' => 'date',
+    ];
 
     public function facilitator()
     {

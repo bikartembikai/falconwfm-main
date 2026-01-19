@@ -32,8 +32,15 @@
                 <div class="flex items-center">
                     @auth
                         <span class="text-sm text-gray-500 mr-4">Hi, {{ Auth::user()->name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="text-sm text-red-600 hover:text-red-900 font-medium">
+                                Logout
+                            </button>
+                        </form>
                     @else
-                        <span class="text-sm text-gray-500 mr-4">Guest Mode</span>
+                        <a href="{{ route('login') }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium mr-4">Login</a>
+                        <a href="{{ route('register') }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">Register</a>
                     @endauth
                 </div>
             </div>

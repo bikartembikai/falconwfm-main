@@ -6,86 +6,118 @@ use Illuminate\Database\Seeder;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\Facilitator;
+use App\Models\Leave;
+use App\Models\Attendance;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
 class RecommendationVerificationSeeder extends Seeder
 {
     public function run()
     {
-        // Clear existing test data (Optional, but good for clean slate if running fresh)
-        // User::truncate(); Event::truncate(); Facilitator::truncate(); // Be careful with truncate in production
-
-        $domains = [
-            'Tech' => ['PHP', 'Laravel', 'Java', 'Python', 'React', 'AWS', 'Docker', 'Kubernetes', 'Cybersecurity'],
-            'Design' => ['UI/UX', 'Figma', 'Photoshop', 'Graphic Design', 'Prototyping', 'Branding'],
-            'Business' => ['Leadership', 'public speaking', 'Project Management', 'Agile', 'Scrum', 'Finance', 'Marketing'],
-            'Health' => ['First Aid', 'Mental Health', 'Nutrition', 'Yoga', 'Meditation'],
-        ];
+        // Clear existing data cleanly
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        User::truncate(); 
+        Event::truncate(); 
+        Facilitator::truncate();
+        Leave::truncate();
+        Attendance::truncate();
+        Payment::truncate();
+        DB::table('assignments')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // ----------------------------------------------------------------
-        // 1. Create 20 Facilitators with diverse profiles
+        // 1. Create Facilitators (with New Skills)
         // ----------------------------------------------------------------
-        $facilitatorProfiles = [
-            ['name' => 'Alice Backend', 'skills' => 'PHP Laravel MySQL Redis', 'bio' => 'Senior Backend Engineer specialized in scalable web apps.'],
-            ['name' => 'Bob DevOps', 'skills' => 'AWS Docker Kubernetes Linux', 'bio' => 'DevOps specialist ensuring 99.9% uptime.'],
-            ['name' => 'Charlie Design', 'skills' => 'Figma UI/UX Prototyping', 'bio' => 'Creative designer with a passion for user-centric interfaces.'],
-            ['name' => 'Diana Lead', 'skills' => 'Leadership Agile Scrum Management', 'bio' => 'Project manager with 10 years of experience in agile teams.'],
-            ['name' => 'Evan Security', 'skills' => 'Cybersecurity Python Ethial Hacking', 'bio' => 'Certified security expert.'],
-            ['name' => 'Fiona Finance', 'skills' => 'Finance Accounting Excel', 'bio' => 'CPA with corporate finance background.'],
-            ['name' => 'George Public', 'skills' => 'Public Speaking Communication Sales', 'bio' => 'Toastmaster and sales trainer.'],
-            ['name' => 'Hannah Health', 'skills' => 'Yoga Meditation Mental Health', 'bio' => 'Wellness coach and yoga instructor.'],
-            ['name' => 'Ian Java', 'skills' => 'Java Spring Microservices', 'bio' => 'Enterprise Java developer.'],
-            ['name' => 'Julia Fullstack', 'skills' => 'React Node.js MongoDB Javascript', 'bio' => 'MERN stack developer.'],
-            // Randoms
-            ['name' => 'Kevin Junior', 'skills' => 'HTML CSS Basic JS', 'bio' => 'Junior web developer eager to learn.'],
-            ['name' => 'Laura Marketing', 'skills' => 'SEO Marketing Content Writing', 'bio' => 'Digital marketing specialist.'],
-            ['name' => 'Mike Data', 'skills' => 'Python Data Science Pandas', 'bio' => 'Data scientist loving big data.'],
-            ['name' => 'Nina Network', 'skills' => 'Cisco Networking Security', 'bio' => 'Network engineer.'],
-            ['name' => 'Oscar Ops', 'skills' => 'Linux Bash Scripting', 'bio' => 'Sysadmin and operations.'],
+        // Skills: Speaking, Medic, Leadership, Facilitating, Public Speaking, Hiking, Trekking, Motivation, Religious, Survival, Logistics, Teaching, Archery, Time Management, Organization Management, Swimming, Logistic
+        $profiles = [
+            // Matches Team Building & Talk
+            ['name' => 'Alice Leader', 'skills' => 'Speaking Leadership Facilitating Public Speaking', 'bank' => 'Maybank', 'acct' => '111'],
+            
+            // Matches Camp & Holiday
+            ['name' => 'Bob Ranger', 'skills' => 'Medic Hiking Trekking Survival Logistics', 'bank' => 'CIMB', 'acct' => '222'],
+            
+            // Matches Workshop
+            ['name' => 'Charlie Teacher', 'skills' => 'Teaching Public Speaking Time Management Organization Management', 'bank' => 'RHB', 'acct' => '333'],
+            
+            // Matches Camp (Religious/Motivation)
+            ['name' => 'Ustaz David', 'skills' => 'Religious Motivation Speaking', 'bank' => 'Bank Islam', 'acct' => '444'],
+            
+            // Matches Holiday (Specific)
+            ['name' => 'Eve Swimmer', 'skills' => 'Swimming Medic Logistic', 'bank' => 'Public Bank', 'acct' => '555'],
+            
+            // Mixed / Archery
+            ['name' => 'Archer Frank', 'skills' => 'Archery Survival Facilitating', 'bank' => 'HLB', 'acct' => '666'],
         ];
 
-        foreach ($facilitatorProfiles as $profile) {
+        foreach ($profiles as $p) {
             $user = User::create([
-                'name' => $profile['name'],
-                'email' => strtolower(str_replace(' ', '.', $profile['name'])) . '@example.com',
+                'name' => $p['name'],
+                'email' => strtolower(str_replace(' ', '.', $p['name'])) . '@falcon.com',
                 'password' => bcrypt('password'),
+                'role' => 'facilitator'
             ]);
 
             Facilitator::create([
                 'user_id' => $user->id,
-                'skills' => $profile['skills'],
-                'experience' => $profile['bio'], // Use bio as experience for consistency
-                'phone_number' => '555-' . rand(1000, 9999),
-                'join_date' => now()->subMonths(rand(1, 24)),
+                'skills' => $p['skills'],
+                'bank_name' => $p['bank'],
+                'bank_account_number' => $p['acct'],
+                'phone_number' => '012-' . rand(1000000, 9999999),
+                'join_date' => now()->subYear(),
             ]);
         }
 
         // ----------------------------------------------------------------
-        // 2. Create 10 Various Events
+        // 2. Create Events (New English Categories)
         // ----------------------------------------------------------------
         $events = [
-            ['name' => 'Adv. Laravel Bootcamp', 'skills' => 'PHP Laravel Backend'],
-            ['name' => 'Cloud Summit 2025', 'skills' => 'AWS Cloud Docker'],
-            ['name' => 'UI Design Workshop', 'skills' => 'Figma UI/UX Design'],
-            ['name' => 'Agile Leadership', 'skills' => 'Leadership Agile Scrum'],
-            ['name' => 'Cyber Defense Con', 'skills' => 'Cybersecurity Hacking'],
-            ['name' => 'Corporate Wellness', 'skills' => 'Yoga Health Meditation'],
-            ['name' => 'Java Enterprise', 'skills' => 'Java Spring'],
-            ['name' => 'Frontend Masters', 'skills' => 'React Javascript Frontend'],
-            ['name' => 'Financial Planning', 'skills' => 'Finance Excel'],
-            ['name' => 'Public Speaking 101', 'skills' => 'Public Speaking Communication'],
+            ['name' => 'Mega Team Building', 'cat' => 'TEAM BUILDING', 'skills' => 'Leadership'],
+            ['name' => 'Leadership Talk', 'cat' => 'TALK', 'skills' => 'Public Speaking'],
+            ['name' => 'Jungle Camp', 'cat' => 'CAMP', 'skills' => 'Survival'],
+            ['name' => 'Management Workshop', 'cat' => 'WORKSHOP', 'skills' => 'Time Management'],
+            ['name' => 'Island Holiday', 'cat' => 'HOLIDAY', 'skills' => 'Swimming'],
         ];
 
         foreach ($events as $evt) {
-            Event::create([
+            $e = Event::create([
                 'event_name' => $evt['name'],
-                'venue' => 'Main Conference Hall',
+                'event_category' => $evt['cat'],
                 'required_skill_tag' => $evt['skills'],
-                'start_date_time' => now()->addDays(rand(1, 30)),
-                'quota' => 50
+                'status' => 'upcoming',
+                'start_date_time' => now()->addDays(rand(5,30)),
+                'quota' => 20
+            ]);
+        }
+        
+        // Create a Past Event with Pending Payment for Testing
+        $pastEvent = Event::create([
+            'event_name' => 'Past Training',
+            'event_category' => 'TEAM BUILDING',
+            'required_skill_tag' => 'Leadership',
+            'status' => 'completed',
+            'start_date_time' => now()->subDays(10),
+            'end_date_time' => now()->subDays(9),
+            'quota' => 10
+        ]);
+        
+        $facil = Facilitator::first();
+        if ($facil) {
+            $att = Attendance::create([
+                'event_id' => $pastEvent->id,
+                'facilitator_id' => $facil->id,
+                'status' => 'present',
+                'clock_in_time' => now()->subDays(10),
+                'clock_out_time' => now()->subDays(10)->addHours(8),
+            ]);
+            
+            Payment::create([
+                'attendance_id' => $att->id,
+                'amount' => 200.00,
+                'payment_status' => 'pending',
             ]);
         }
 
-        $this->command->info("Seeded " . count($facilitatorProfiles) . " Facilitators and " . count($events) . " Events.");
+        $this->command->info("Seeded with New Criteria Data & Payment Test Data.");
     }
 }

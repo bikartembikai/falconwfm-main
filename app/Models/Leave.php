@@ -4,23 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Assignment extends Model
+class Leave extends Model
 {
     protected $fillable = [
-        'event_id',
         'user_id',
-        'role',
-        'date_assigned'
+        'start_date',
+        'end_date',
+        'status',
+        'reason'
     ];
 
     protected $casts = [
-        'date_assigned' => 'datetime',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
-
-    public function event()
-    {
-        return $this->belongsTo(Event::class);
-    }
 
     public function user()
     {
