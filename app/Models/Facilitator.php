@@ -26,4 +26,14 @@ class Facilitator extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    public function leaves()
+    {
+        return $this->hasMany(Leave::class);
+    }
 }
