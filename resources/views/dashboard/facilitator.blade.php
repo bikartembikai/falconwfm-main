@@ -39,7 +39,7 @@
                             <span class="text-xs">(Clock-in form hidden for demo simplicity)</span>
                         </form>
                         
-                        <form action="{{ route('assignment.destroy', $assignment->id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                        <form action="{{-- route('assignment.destroy', $assignment->id) --}}" method="POST" onsubmit="return confirm('Are you sure?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-900 text-xs">Withdraw</button>

@@ -1,8 +1,11 @@
 <?php
 
-use App\Services\RecommendationService;
+use App\Services\InferenceEngine;
 use App\Models\Event;
 use App\Models\Facilitator;
+use App\Models\Assignment;
+use App\Models\Leave;
+use Carbon\Carbon;
 
 // Load App
 require __DIR__ . '/vendor/autoload.php';
@@ -10,40 +13,141 @@ $app = require_once __DIR__ . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-$service = new RecommendationService();
+$engine = new InferenceEngine();
 
-echo "=== RULE-BASED RECOMMENDATION SYSTEM VERIFICATION ===\n\n";
+echo "\n=== DECISION SUPPORT SYSTEM (INFERENCE ENGINE) VERIFICATION ===\n";
 
-// 1. Verify Event->Facilitator
-echo "--- 1. Recommending Facilitators for specific Events ---\n";
-$events = Event::whereIn('event_category', ['TEAM BUILDING', 'CERAMAH', 'KEM'])->take(3)->get();
+// ---------------------------------------------------------
+// TEST CASE 1: AVAILABILITY CONSTRAINT (Assignment Conflict)
+// ---------------------------------------------------------
+echo "\n--- Test Case 1: Availability Constraint (Assignment Conflict) ---\n";
+$event1 = Event::first(); // Assume 'Mega Team Building'
+$facilitator = Facilitator::first(); 
 
-foreach ($events as $event) {
-    echo "\n[Event] ID: {$event->id} | Name: {$event->event_name} | Category: {$event->event_category}\n";
-    $recommendations = $service->recommend($event);
+if ($event1 && $facilitator) {
+    echo "Testing Facilitator: " . $facilitator->user->name . "\n";
+    echo "Event: " . $event1->event_name . " (" . $event1->start_date_time . " to " . $event1->end_date_time . ")\n";
+
+    // 1. Assign to Event 1
+    Assignment::create([
+        'event_id' => $event1->id,
+        'user_id' => $facilitator->user_id, // Facilitator is User
+        'role' => 'Leader',
+        'date_assigned' => now()
+    ]);
+    echo "-> Assigned {$facilitator->user->name} to {$event1->event_name}.\n";
+
+    // 2. Create Overlapping Event
+    $event2 = $event1->replicate();
+    $event2->event_name = "Clash Event";
+    $event2->save();
+    echo "-> Created overlapping event: {$event2->event_name}\n";
+
+    // 3. Ask Recommendation for Event 2
+    $recommendations = $engine->recommend($event2);
     
-    if (empty($recommendations)) {
-        echo "   No matches found.\n";
-    } else {
-        foreach ($recommendations as $rec) {
-            echo "   -> [{$rec['match_score']} Matches] Facilitator: {$rec['name']} (Matched: {$rec['matched_keywords']})\n";
+    // 4. Verify Exclusion
+    $found = false;
+    foreach ($recommendations as $rec) {
+        if ($rec['id'] == $facilitator->id) {
+            $found = true;
+            break;
         }
     }
+
+    if (!$found) {
+        echo "✅ PASS: Facilitator was correctly EXCLUDED due to assignment conflict.\n";
+    } else {
+        echo "❌ FAIL: Facilitator was RECOMMENDED despite conflict!\n";
+    }
+
+    // Cleanup
+    Assignment::where('event_id', $event1->id)->delete();
+    $event2->delete();
+} else {
+    echo "Skipping: Missing seed data.\n";
 }
 
-// 2. Verify Facilitator->Event
-echo "\n\n--- 2. Recommending Events for specific Facilitators ---\n";
-$facilitators = Facilitator::with('user')->take(3)->get();
+// ---------------------------------------------------------
+// TEST CASE 2: LEAVE CONSTRAINT
+// ---------------------------------------------------------
+echo "\n--- Test Case 2: Availability Constraint (On Leave) ---\n";
+if ($event1 && $facilitator) {
+    // 1. Create Leave overlapping Event 1
+    Leave::create([
+        'user_id' => $facilitator->user_id,
+        'start_date' => Carbon::parse($event1->start_date_time)->subDay(),
+        'end_date' => Carbon::parse($event1->end_date_time)->addDay(),
+        'status' => 'approved',
+        'reason' => 'Sick'
+    ]);
+    echo "-> Put {$facilitator->user->name} on Approved Leave during event.\n";
 
-foreach ($facilitators as $facil) {
-    echo "\n[Facilitator] Name: {$facil->user->name} | Skills: {$facil->skills}\n";
-    $recommendations = $service->recommendEvents($facil->id);
+    // 2. Recommend
+    $recommendations = $engine->recommend($event1);
 
-    if (empty($recommendations)) {
-        echo "   No relevant events found.\n";
-    } else {
-        foreach ($recommendations as $rec) {
-            echo "   -> [{$rec['match_score']} Matches] Event: {$rec['name']} ({$rec['category']}) (Matched: {$rec['matched_keywords']})\n";
+    // 3. Verify
+    $found = false;
+    foreach ($recommendations as $rec) {
+        if ($rec['id'] == $facilitator->id) {
+            $found = true;
+            break;
         }
     }
+
+    if (!$found) {
+        echo "✅ PASS: Facilitator was correctly EXCLUDED due to Leave.\n";
+    } else {
+        echo "❌ FAIL: Facilitator was RECOMMENDED despite being on Leave!\n";
+    }
+
+    // Cleanup
+    Leave::truncate();
+}
+
+// ---------------------------------------------------------
+// TEST CASE 3: EXPERIENCE CONSTRAINT (High Risk)
+// ---------------------------------------------------------
+echo "\n--- Test Case 3: Experience Constraint (High Risk Event) ---\n";
+// Create High Risk Event (CAMP)
+$campEvent = new Event([
+    'event_name' => 'Survival Camp',
+    'event_category' => 'CAMP',
+    'start_date_time' => now()->addMonth(),
+    'end_date_time' => now()->addMonth()->addDays(2)
+]);
+
+// Create Junior Facilitator
+$userJunior = \App\Models\User::factory()->create(['name' => 'Junior Staff']);
+$jrFacil = Facilitator::create([
+    'user_id' => $userJunior->id,
+    'join_date' => now()->subMonth(), // 1 Month Experience
+    'skills' => 'Survival Camping', // Has Skills
+    'experience' => 'Newbie'
+]);
+
+$recs = $engine->recommend($campEvent);
+$found = false;
+foreach ($recs as $rec) {
+    if ($rec['id'] == $jrFacil->id) $found = true;
+}
+
+if (!$found) {
+    echo "✅ PASS: Junior Facilitator EXCLUDED from High Risk Camp (Tenure < 2 Years).\n";
+} else {
+    echo "❌ FAIL: Junior Facilitator incorrectly recommended for High Risk Camp.\n";
+}
+
+// Cleanup
+$jrFacil->delete();
+$userJunior->delete();
+
+// ---------------------------------------------------------
+// TEST CASE 4: RANKING (Suitability)
+// ---------------------------------------------------------
+echo "\n--- Test Case 4: Suitability Ranking ---\n";
+$recs = $engine->recommend($event1);
+echo "Make sure the list is sorted by Score (Rating + Skills):\n";
+foreach ($recs as $rec) {
+    echo "   -> [Score: {$rec['match_score']}] {$rec['name']} (Rating: {$rec['rating']})\n";
 }
