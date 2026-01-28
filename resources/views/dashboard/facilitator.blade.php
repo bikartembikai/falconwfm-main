@@ -1,72 +1,203 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mb-6">
-    <h1 class="text-3xl font-bold text-slate-900">My Dashboard</h1>
-    <p class="text-slate-600">Welcome back, {{ Auth::user()->name }}</p>
-</div>
+<div class="flex h-screen bg-gray-50">
+    <!-- Sidebar (Desktop: Fixed, Mobile: Hidden/Drawer) -->
+    <aside class="hidden md:flex flex-col w-64 bg-green-600 text-white h-full fixed inset-y-0 left-0 z-30 shadow-xl transition-all duration-300">
+        <div class="p-6 text-2xl font-bold border-b border-green-500 flex items-center gap-2">
+            <div class="bg-white text-green-600 p-1 rounded font-mono text-sm">FM</div>
+            <span>Facilitator <span class="text-xs block font-normal text-green-100">Portal</span></span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="{{ route('facilitator.dashboard') }}" class="flex items-center gap-3 px-4 py-3 bg-green-700 rounded-lg shadow-inner">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                Dashboard
+            </a>
+            <a href="{{ route('attendance.clockin_view') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-green-50 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Clock In/Out
+            </a>
+            <a href="{{ route('assignments.index') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-green-50 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Assigned Events
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-green-50 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Leave Request
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-green-50 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                Allowance Request
+            </a>
+        </nav>
+        <div class="p-4 border-t border-green-500 bg-green-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-bold text-lg">
+                    {{ substr(Auth::user()->name, 0, 1) }}
+                </div>
+                <div>
+                    <div class="text-sm font-medium leading-none">{{ Auth::user()->name }}</div>
+                    <div class="text-xs text-green-200 mt-1">Facilitator</div>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-<!-- My Upcoming Jobs -->
-<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between">
-        <h3 class="text-lg leading-6 font-medium text-gray-900">My Upcoming Assignments</h3>
-        <a href="{{ route('facilitator.edit') }}" class="text-sm text-indigo-600 hover:text-indigo-900">Edit Profile</a>
-    </div>
-    <ul role="list" class="divide-y divide-gray-200">
-        @forelse($assignments as $assignment)
-            <li class="px-4 py-4 sm:px-6">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-indigo-600 truncate">{{ $assignment->event->event_name }}</p>
-                    <div class="ml-2 flex-shrink-0 flex">
-                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {{ $assignment->status ?? 'Confirmed' }}
-                        </p>
+    <!-- Main Content -->
+    <div class="flex-1 md:ml-64 flex flex-col h-screen overflow-y-auto w-full transition-all duration-300">
+        <!-- Mobile Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-20 md:hidden flex justify-between items-center p-4 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="bg-green-600 text-white p-1 rounded font-mono text-sm shadow-sm">FM</div>
+                <span class="font-bold text-gray-800 tracking-tight">Facilitator Portal</span>
+            </div>
+            <button id="mobile-menu-btn" class="text-gray-600 focus:outline-none p-2 rounded-md hover:bg-gray-100 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </header>
+
+        <!-- Dynamic Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-green-600 text-white absolute top-[60px] left-0 right-0 z-30 shadow-xl border-t border-green-500 transform origin-top transition-transform duration-200">
+            <a href="{{ route('facilitator.dashboard') }}" class="block px-6 py-4 border-b border-green-500 bg-green-700 font-medium">Dashboard</a>
+            <a href="{{ route('attendance.clockin_view') }}" class="block px-6 py-4 border-b border-green-500 hover:bg-green-500 transition">Clock In/Out</a>
+            <a href="{{ route('assignments.index') }}" class="block px-6 py-4 border-b border-green-500 hover:bg-green-500 transition">Assigned Events</a>
+            <a href="#" class="block px-6 py-4 border-b border-green-500 hover:bg-green-500 transition">Leave Request</a>
+            <a href="#" class="block px-6 py-4 hover:bg-green-500 transition">Allowance Request</a>
+        </div>
+
+        <main class="flex-1 p-4 md:p-8 bg-gray-50 pb-20 md:pb-8">
+            <div class="max-w-7xl mx-auto space-y-8">
+                <!-- Welcome Section -->
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Welcome, {{ Auth::user()->name }}!</h1>
+                    <p class="text-gray-500 mt-1 text-sm md:text-base">Here's your facilitator portal dashboard.</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Stat Card 1 -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition duration-200">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Assignments</p>
+                            <p class="text-3xl font-bold text-gray-800 mt-2">{{ $totalAssignments ?? 0 }}</p>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-blue-600 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                    </div>
+                    <!-- Stat Card 2 -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition duration-200">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending</p>
+                            <p class="text-3xl font-bold text-gray-800 mt-2">{{ $pendingAssignments ?? 0 }}</p>
+                        </div>
+                        <div class="p-3 bg-yellow-50 text-yellow-600 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                    </div>
+                    <!-- Stat Card 3 -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition duration-200">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hours Worked</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2">{{ $hoursWorked ?? '0.0h' }}</p>
+                        </div>
+                        <div class="p-3 bg-green-50 text-green-600 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+                    <!-- Stat Card 4 -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition duration-200">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending Pay</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-2">{{ $pendingAllowance ?? 0 }}</p>
+                        </div>
+                        <div class="p-3 bg-purple-50 text-purple-600 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-2 sm:flex sm:justify-between">
-                    <div class="sm:flex">
-                        <p class="flex items-center text-sm text-gray-500">
-                             {{ $assignment->event->start_date_time->format('M d, Y @ h:i A') }}
-                        </p>
+
+                <!-- Quick Actions Grid -->
+                <section>
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <a href="{{ route('attendance.clockin_view') }}" class="group bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center hover:shadow-lg hover:border-blue-200 hover:-translate-y-1 transition duration-200">
+                            <div class="p-4 bg-blue-50 text-blue-600 rounded-full mb-3 group-hover:bg-blue-600 group-hover:text-white transition">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <span class="font-semibold text-gray-800 text-sm">Clock In/Out</span>
+                            <span class="text-xs text-gray-400 mt-1">Record time</span>
+                        </a>
+                        <a href="{{ route('assignments.index') }}" class="group bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center hover:shadow-lg hover:border-purple-200 hover:-translate-y-1 transition duration-200">
+                            <div class="p-4 bg-purple-50 text-purple-600 rounded-full mb-3 group-hover:bg-purple-600 group-hover:text-white transition">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <span class="font-semibold text-gray-800 text-sm">View Jobs</span>
+                            <span class="text-xs text-gray-400 mt-1">Manage events</span>
+                        </a>
+                        <a href="#" class="group bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center hover:shadow-lg hover:border-orange-200 hover:-translate-y-1 transition duration-200">
+                            <div class="p-4 bg-orange-50 text-orange-600 rounded-full mb-3 group-hover:bg-orange-600 group-hover:text-white transition">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <span class="font-semibold text-gray-800 text-sm">Request Leave</span>
+                            <span class="text-xs text-gray-400 mt-1">Apply for leave</span>
+                        </a>
+                        <a href="#" class="group bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center hover:shadow-lg hover:border-emerald-200 hover:-translate-y-1 transition duration-200">
+                            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-full mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                            </div>
+                            <span class="font-semibold text-gray-800 text-sm">Allowance</span>
+                            <span class="text-xs text-gray-400 mt-1">Request expense</span>
+                        </a>
                     </div>
-                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 gap-4">
-                        <form action="{{ route('attendance.clockIn') }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
-                            @csrf
-                            <input type="hidden" name="event_id" value="{{ $assignment->event->id }}">
-                             <!-- Simplified for demo: no file input styling -->
-                            {{-- <input type="file" name="image_proof" required class="text-xs"> --}}
-                            {{-- <button type="submit" class="text-indigo-600 hover:text-indigo-900">Clock In</button> --}}
-                            <span class="text-xs">(Clock-in form hidden for demo simplicity)</span>
-                        </form>
-                        
-                        <form action="{{-- route('assignment.destroy', $assignment->id) --}}" method="POST" onsubmit="return confirm('Are you sure?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:text-red-900 text-xs">Withdraw</button>
-                        </form>
+                </section>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                            <div class="w-2 h-6 bg-blue-500 rounded-full"></div>
+                            Recent Assignments
+                        </h3>
+                        <div class="text-center text-gray-400 py-12 flex flex-col items-center">
+                            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                            <span class="text-sm">No recent assignments yet</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                            <div class="w-2 h-6 bg-green-500 rounded-full"></div>
+                            Recent Allowance
+                        </h3>
+                        <div class="bg-gray-50 rounded-lg p-4 flex justify-between items-center mb-4 hover:bg-gray-100 transition cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800 text-sm">Travel</p>
+                                    <p class="text-xs text-gray-500">24 Feb 2024</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-gray-800">RM 500</p>
+                                <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] uppercase font-bold rounded-full tracking-wide">Pending</span>
+                            </div>
+                        </div>
+                        <button class="w-full bg-white border border-green-600 text-green-600 py-2.5 rounded-lg text-sm font-semibold hover:bg-green-50 transition shadow-sm">View All Allowances</button>
                     </div>
                 </div>
-            </li>
-        @empty
-            <li class="px-4 py-4 sm:px-6 text-gray-500 text-sm">
-                You have no upcoming jobs. check the <a href="{{ route('events.index') }}" class="text-indigo-600">Events Board</a>.
-            </li>
-        @endforelse
-    </ul>
-</div>
-
-<!-- Recommendations Upgrade -->
-<div class="bg-indigo-50 rounded-lg p-6">
-    <h3 class="text-lg font-bold text-indigo-900 mb-2">Recommended for You</h3>
-    <p class="text-indigo-700 mb-4">Based on your skills ({{ $facilitator->skills }}) and experience.</p>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-         <!-- This section would dynamically call the service logic. For now linking to debug dashboard. -->
-         <p class="text-sm text-indigo-600">
-             The system is actively matching you against <strong>{{ \App\Models\Event::count() }}</strong> available events.
-             <br>
-             <a href="{{ url('/recommender/debug') }}" class="font-bold underline">View Advanced Recommendations Matrix</a>
-         </p>
+            </div>
+        </main>
     </div>
 </div>
+
+<script>
+    // Toggle Mobile Menu Logic
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+
+    btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+    });
+</script>
 @endsection

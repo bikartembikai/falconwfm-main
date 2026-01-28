@@ -9,30 +9,6 @@ use Carbon\Carbon;
 class InferenceEngine
 {
     /**
-     * Knowledge Base: Event Type => Criteria
-     * (Hard Coded Rules as per FYP / System Design)
-     */
-    protected $rules = [
-        'TEAM BUILDING' => [
-            'skills' => ['Speaking', 'Medic', 'Leadership', 'Facilitating']
-        ],
-        'TALK' => [
-            'skills' => ['Speaking', 'Leadership', 'Public Speaking', 'Facilitating']
-        ],
-        'CAMP' => [
-            'skills' => ['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics'],
-            'high_risk' => true // Heuristic Rule Trigger
-        ],
-        'WORKSHOP' => [
-            'skills' => ['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics']
-        ],
-        'HOLIDAY' => [
-            'skills' => ['Medic', 'Swimming', 'Logistic'],
-            'high_risk' => true // Heuristic Rule Trigger
-        ]
-    ];
-
-    /**
      * Main Inference Function (Forward Chaining Logic)
      * 
      * @param object|Event $event
@@ -41,79 +17,92 @@ class InferenceEngine
      */
     public function recommend($event, $limit = 5)
     {
+        $candidates = $this->analyzeFacilitators($event);
+        
+        // Filter only available and qualified for automatic recommendation
+        $filtered = array_filter($candidates, function($c) {
+            return $c['status'] === 'available';
+        });
+
+        // Sort by Suitability Score Descending
+        usort($filtered, function ($a, $b) {
+            return $b['match_score'] <=> $a['match_score'];
+        });
+
+        return array_slice($filtered, 0, $limit);
+    }
+
+    /**
+     * Analyze ALL facilitators and return their compatibility status
+     * Used for the Assignment Interface
+     */
+    public function analyzeFacilitators($event)
+    {
         // 1. Data Fuzzification / Normalization
         $category = $this->normalizeCategory($event->event_category ?? '');
         $eventStart = $event->start_date_time ? Carbon::parse($event->start_date_time) : null;
         $eventEnd = $event->end_date_time ? Carbon::parse($event->end_date_time) : null;
         
+        // Load Rule from Knowledge Base (Database)
+        $rule = \App\Models\EventRule::find($category);
+        
         // Load Facts (Facilitators with History)
         $facilitators = Facilitator::with(['user.assignments.event', 'user.leaves'])->get();
         
-        $candidates = [];
+        $results = [];
 
         foreach ($facilitators as $facil) {
             $reason = null;
+            $status = 'available';
+            $debugReason = 'Qualified';
 
-            // ---------------------------------------------------------
-            // RULE 1: AVAILABILITY CHECK (Hard Constraint)
-            // ---------------------------------------------------------
             if (!$this->checkAvailability($facil, $eventStart, $eventEnd, $reason)) {
-                // Log rejected for debugging/explanation if needed
-                continue; 
+                $status = 'busy';
+                $debugReason = $reason;
+            }
+            $skillMatchScore = $this->calculateSkillMatch($facil, $rule, $event->required_skill_tag ?? null);
+            if ($status === 'available' && $skillMatchScore <= 0) {
+                if ($rule && !empty($rule->required_skills)) {
+                    $status = 'unqualified'; 
+                    $reason = "No matching skills for {$category}";
+                    $debugReason = $reason;
+                }
             }
 
-            // ---------------------------------------------------------
-            // RULE 2: COMPETENCY MAPPING (Hard Constraint)
-            // ---------------------------------------------------------
-            $skillMatchScore = $this->calculateSkillMatch($facil, $category, $event->required_skill_tag ?? null);
-            if ($skillMatchScore <= 0) {
-                continue; // Reject if 0 skills match
+            if ($status === 'available' && $rule && !$this->checkExperienceConstraint($facil, $rule, $reason)) {
+                $status = 'unqualified';
+                $debugReason = $reason;
             }
-
-            // ---------------------------------------------------------
-            // RULE 3: EXPERIENCE HEURISTICS (Safety Rule)
-            // ---------------------------------------------------------
-            if (!$this->checkExperienceConstraint($facil, $category, $reason)) {
-                continue; // Reject inexperienced staff for high risk events
-            }
-
-            // ---------------------------------------------------------
-            // RULE 4: QUALITY RANKING (Soft Constraint / Inference)
-            // ---------------------------------------------------------
-            // Suitability Score = (Rating * 2) + SkillMatches
-            // Example: Rating 5.0 * 2 = 10 + 3 skills = 13
             $rating = $facil->average_rating ?? 0;
             $suitabilityScore = ($rating * 2) + $skillMatchScore;
 
-            $candidates[] = [
+            $results[] = [
                 'id' => $facil->id,
+                'user_id' => $facil->user_id,
                 'name' => $facil->user ? $facil->user->name : 'Unknown',
+                'email' => $facil->user ? $facil->user->email : '',
                 'match_score' => $suitabilityScore,
                 'skills_matched' => $skillMatchScore,
                 'rating' => $rating,
                 'skills' => $facil->skills,
                 'experience' => $facil->experience,
-                'debug_reason' => 'Qualified'
+                'join_date' => $facil->join_date,
+                'status' => $status, 
+                'reason' => $reason
             ];
         }
 
-        // Sort by Suitability Score Descending
-        usort($candidates, function ($a, $b) {
+        usort($results, function ($a, $b) {
             return $b['match_score'] <=> $a['match_score'];
         });
 
-        return array_slice($candidates, 0, $limit);
+        return $results;
     }
-
-    // --------------------------------------------------------------------
-    // INFERENCE RULES
-    // --------------------------------------------------------------------
 
     private function checkAvailability($facil, $start, $end, &$reason)
     {
-        if (!$start || !$end) return true; // Cannot check without dates
+        if (!$start || !$end) return true; 
 
-        // Check 1: Assignments Overlap
         if ($facil->user && $facil->user->assignments) {
             foreach ($facil->user->assignments as $assign) {
                 if ($assign->event) {
@@ -128,14 +117,12 @@ class InferenceEngine
             }
         }
 
-        // Check 2: Leaves Overlap
         if ($facil->user && $facil->user->leaves) {
             foreach ($facil->user->leaves as $leave) {
                 if ($leave->status === 'approved') {
                     $lStart = Carbon::parse($leave->start_date);
                     $lEnd = Carbon::parse($leave->end_date);
 
-                    // If leave overlaps event
                     if ($start->lessThanOrEqualTo($lEnd) && $end->greaterThanOrEqualTo($lStart)) {
                         $reason = "On approved leave";
                         return false;
@@ -147,9 +134,10 @@ class InferenceEngine
         return true;
     }
 
-    private function calculateSkillMatch($facil, $category, $requiredTag)
+    private function calculateSkillMatch($facil, $rule, $requiredTag)
     {
-        $targetSkills = $this->rules[$category]['skills'] ?? [];
+        $targetSkills = $rule ? ($rule->required_skills ?? []) : [];
+        
         if ($requiredTag) {
             $targetSkills[] = $requiredTag;
         }
@@ -166,18 +154,21 @@ class InferenceEngine
         return $match;
     }
 
-    private function checkExperienceConstraint($facil, $category, &$reason)
+    private function checkExperienceConstraint($facil, $rule, &$reason)
     {
-        $isHighRisk = $this->rules[$category]['high_risk'] ?? false;
+        if (!$rule) return true;
 
-        if ($isHighRisk) {
+        $isHighRisk = strtolower($rule->intensity_level) === 'high risk';
+        $minExp = $rule->min_experience;
+
+        if ($isHighRisk || $minExp > 0) {
             $tenureYears = 0;
             if ($facil->join_date) {
                 $tenureYears = Carbon::parse($facil->join_date)->diffInYears(now());
             }
 
-            if ($tenureYears < 2) {
-                $reason = "Experience < 2 years for High Risk event";
+            if ($tenureYears < $minExp) {
+                $reason = "Experience ($tenureYears yrs) < Required ($minExp yrs) for High Risk/Intense Event";
                 return false;
             }
         }

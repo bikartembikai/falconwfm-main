@@ -29,11 +29,25 @@ class Facilitator extends Model
 
     public function assignments()
     {
-        return $this->hasMany(Assignment::class);
+        // Assignments are linked via User ID
+        return $this->hasMany(Assignment::class, 'user_id', 'user_id');
     }
 
     public function leaves()
     {
-        return $this->hasMany(Leave::class);
+        // Leaves are linked via User ID
+        return $this->hasMany(Leave::class, 'user_id', 'user_id');
+    }
+
+    public function attendances()
+    {
+        // Attendances are linked via Facilitator ID
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function performanceReviews()
+    {
+        // Performance Reviews are linked via Facilitator ID
+        return $this->hasMany(PerformanceReview::class);
     }
 }

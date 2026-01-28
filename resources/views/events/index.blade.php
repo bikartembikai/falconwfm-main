@@ -96,7 +96,7 @@
                         {{ $event->quota }} capacity
                      </span>
                      
-                     <a href="{{ route('events.show', $event->id) }}" class="text-sm font-semibold text-slate-900 hover:text-indigo-600 flex items-center transition-colors">
+                     <a href="{{ route('assignments.create', $event->id) }}" class="text-sm font-semibold text-slate-900 hover:text-indigo-600 flex items-center transition-colors">
                          Assign Facilitators
                          <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                      </a>

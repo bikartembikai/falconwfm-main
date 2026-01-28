@@ -10,12 +10,50 @@ use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
+    // Show Clock In View
+    public function clockin_view()
+    {
+        $user = Auth::user();
+        if (!$user) return redirect('/login');
+        
+        $facilitator = $user->facilitator;
+        if (!$facilitator) return redirect()->route('facilitator.dashboard')->with('error', 'Profile not found');
+
+        // Logic to find "Active Event" (Assigned & Today)
+        // Adjust logic based on real date vs simulation
+        $today = now()->startOfDay();
+        
+        // Find assignment for today
+        $assignment = \App\Models\Assignment::where('user_id', $user->id)
+                            ->whereHas('event', function($q) {
+                                $q->whereDate('start_date_time', now()->toDateString());
+                            })
+                            ->where('status', 'accepted')
+                            ->first();
+                            
+        $activeEvent = $assignment ? $assignment->event : null;
+
+        $currentAttendance = null;
+        if ($activeEvent) {
+            $currentAttendance = Attendance::where('event_id', $activeEvent->id)
+                                    ->where('facilitator_id', $facilitator->id)
+                                    ->first();
+        }
+
+        $history = Attendance::where('facilitator_id', $facilitator->id)
+                             ->with('event')
+                             ->orderBy('created_at', 'desc')
+                             ->get();
+
+        return view('facilitator.clockin', compact('activeEvent', 'currentAttendance', 'history'));
+    }
+
     // Clock In
     public function store(Request $request)
     {
         $request->validate([
             'event_id' => 'required|exists:events,id',
-            'image_proof' => 'required|image|max:2048', // 2MB Max
+            'image_proof' => 'nullable|image|max:2048', // Made nullable for mobile UI simplicity
         ]);
 
         $user = Auth::user();

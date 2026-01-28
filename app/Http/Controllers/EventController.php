@@ -83,7 +83,31 @@ class EventController extends Controller
 
         return redirect()->route('events.index')->with('success', 'Event created successfully.');
     }
+    public function update(Request $request, $id)
+    {
+        $event = Event::findOrFail($id);
+        
+        $validated = $request->validate([
+            'event_name' => 'required|string|max:255',
+            'venue' => 'required|string|max:255',
+            'event_description' => 'nullable|string',
+            'event_category' => 'required|string',
+            'quota' => 'required|integer|min:1',
+            'start_date_time' => 'required|date',
+            'end_date_time' => 'nullable|date|after:start_date_time',
+        ]);
 
-    // Apply is deprecated/removed in favor of Admin Assignment, but keeping method if needed for logic ref
-    // public function apply(...) {}
+        $event->update($validated);
+
+        return redirect()->route('events.index')->with('success', 'Event updated successfully.');
+    }
+
+    // Delete event
+    public function destroy($id)
+    {
+        $event = Event::findOrFail($id);
+        $event->delete();
+        
+        return redirect()->route('events.index')->with('success', 'Event deleted successfully.');
+    }
 }

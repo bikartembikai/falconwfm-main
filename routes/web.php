@@ -35,11 +35,13 @@ Route::middleware(['web'])->group(function () {
     Route::get('/facilitator/{id}', [FacilitatorController::class, 'show'])->name('facilitator.show');
 
     // Attendance
+    Route::get('/attendance/record', [AttendanceController::class, 'clockin_view'])->name('attendance.clockin_view');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'store'])->name('attendance.clockIn');
     Route::put('/attendance/{id}/clock-out', [AttendanceController::class, 'update'])->name('attendance.clockOut');
 
     // Assignments
-    Route::resource('assignments', AssignmentController::class)->only(['store', 'destroy']);
+    Route::get('/events/{event}/assign', [AssignmentController::class, 'create'])->name('assignments.create');
+    Route::resource('assignments', AssignmentController::class)->only(['index', 'store', 'destroy']);
 
     // Reviews
     Route::post('/facilitator/{id}/review', [ReviewController::class, 'store'])->name('reviews.store');

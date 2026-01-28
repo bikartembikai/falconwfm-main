@@ -35,4 +35,9 @@ class Event extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    public function rule()
+    {
+        return $this->belongsTo(EventRule::class, 'event_category', 'event_category');
+    }
 }

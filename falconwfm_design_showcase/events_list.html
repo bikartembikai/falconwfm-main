@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FalconWFM - Event Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .sidebar-link {
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-indigo-700 text-indigo-100 flex flex-col flex-shrink-0 transition-all duration-300">
+        <div class="h-16 flex items-center justify-center border-b border-indigo-600">
+            <a href="index.html" class="text-2xl font-bold text-white tracking-wider hover:opacity-80">Falcon<span
+                    class="font-light">WFM</span></a>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="dashboard_admin.html"
+                class="sidebar-link flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-600">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                    </path>
+                </svg>
+                Dashboard Overview
+            </a>
+
+            <a href="events_list.html"
+                class="sidebar-link active flex items-center px-4 py-3 rounded-lg text-sm font-medium bg-indigo-800 text-white">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                </svg>
+                Events Management
+            </a>
+
+            <a href="#"
+                class="sidebar-link flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-600">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+                Facilitators
+            </a>
+
+            <a href="#"
+                class="sidebar-link flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-600">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                Payroll
+            </a>
+
+            <a href="facilitator_dashboard.html"
+                class="sidebar-link flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-600 opacity-75 mt-auto border-t border-indigo-600 pt-4">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View as Facilitator
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-indigo-600">
+            <div class="flex items-center">
+                <div
+                    class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xs mr-3">
+                    AD
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-white">Admin User</p>
+                    <p class="text-xs text-indigo-300">System Administrator</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <div class="flex-1 overflow-y-auto bg-gray-50 p-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="space-y-6">
+
+                    <!-- Header -->
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-800">Event</h1>
+                            <p class="text-slate-500">Manage and assign facilitators to upcoming events</p>
+                        </div>
+                        <a href="#"
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            New Event
+                        </a>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                            <h3 class="text-sm font-medium text-slate-500 mb-2">Total Events</h3>
+                            <div class="text-3xl font-bold text-slate-900">24</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                            <h3 class="text-sm font-medium text-slate-500 mb-2">Pending Assignment</h3>
+                            <div class="text-3xl font-bold text-yellow-600">3</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                            <h3 class="text-sm font-medium text-slate-500 mb-2">Fully Assigned</h3>
+                            <div class="text-3xl font-bold text-green-600">21</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs / Filters -->
+                    <div class="bg-transparent border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <a href="#"
+                                class="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                All Events <span
+                                    class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-600">24</span>
+                            </a>
+
+                            <a href="#"
+                                class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                Pending Assignment <span
+                                    class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-gray-100 text-gray-900">3</span>
+                            </a>
+
+                            <a href="#"
+                                class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                Fully Assigned <span
+                                    class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-gray-100 text-gray-900">21</span>
+                            </a>
+                        </nav>
+                    </div>
+
+                    <!-- Event Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                        <!-- Event Card 1 (Fully Assigned) -->
+                        <div
+                            class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-lg font-bold text-slate-900 line-clamp-2 leading-tight">Team Building:
+                                    Petronas</h3>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Fully Assigned
+                                </span>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-4 line-clamp-3 flex-grow">Annual high performance team
+                                building workshop for Petronas executive team.</p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    25/12/2025
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="truncate">Janda Baik, Pahang</span>
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    5 / 5 facilitators assigned
+                                </div>
+                            </div>
+                            <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    5 capacity
+                                </span>
+                                <a href="#"
+                                    class="text-sm font-semibold text-slate-900 hover:text-indigo-600 flex items-center transition-colors">
+                                    Manage
+                                    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Event Card 2 (Pending) -->
+                        <div
+                            class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-lg font-bold text-slate-900 line-clamp-2 leading-tight">Leadership Camp:
+                                    UiTM</h3>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                                    Pending
+                                </span>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-4 line-clamp-3 flex-grow">Student leadership development
+                                cam focusing on outdoor activities and team bonding.</p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    10/01/2026
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="truncate">A'Famosa Resort, Melaka</span>
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    1 / 8 facilitators assigned
+                                </div>
+                            </div>
+                            <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    8 capacity
+                                </span>
+                                <a href="#"
+                                    class="text-sm font-semibold text-slate-900 hover:text-indigo-600 flex items-center transition-colors">
+                                    Assign Facilitators
+                                    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Event Card 3 -->
+                        <div
+                            class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-lg font-bold text-slate-900 line-clamp-2 leading-tight">Cybersecurity
+                                    Workshop</h3>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Fully Assigned
+                                </span>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-4 line-clamp-3 flex-grow">Technical workshop on latest
+                                cybersecurity threats and defenses.</p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    05/03/2026
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="truncate">KLCC Convention Center</span>
+                                </div>
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <svg class="flex-shrink-0 mr-2 h-4 w-4 text-slate-400"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    3 / 3 facilitators assigned
+                                </div>
+                            </div>
+                            <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    3 capacity
+                                </span>
+                                <a href="#"
+                                    class="text-sm font-semibold text-slate-900 hover:text-indigo-600 flex items-center transition-colors">
+                                    Manage
+                                    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+
+</html>

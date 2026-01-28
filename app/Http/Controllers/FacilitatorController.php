@@ -22,16 +22,48 @@ class FacilitatorController extends Controller
 
         $facilitator = $user->facilitator;
         if (!$facilitator) {
-            // Auto-create profile if missing (simplified flow)
             $facilitator = Facilitator::create(['user_id' => $user->id]);
         }
+
+        // Stats Calculation
+        $totalAssignments = Assignment::where('user_id', $user->id)->count();
+        $pendingAssignments = Assignment::where('user_id', $user->id)->where('status', 'pending')->count();
+        
+        // Calculate Hours Worked (Sum of completed attendance hours)
+        $attendances = \App\Models\Attendance::where('facilitator_id', $facilitator->id)
+                            ->whereNotNull('clock_out_time')
+                            ->get();
+        $hoursWorked = 0;
+        foreach ($attendances as $att) {
+            $start = \Carbon\Carbon::parse($att->clock_in_time);
+            $end = \Carbon\Carbon::parse($att->clock_out_time);
+            $hoursWorked += $end->diffInHours($start); // or float diffInMinutes / 60
+        }
+        $hoursWorked = number_format($hoursWorked, 1) . 'h';
+
+        // Pending Allowance (Sum of 'pending' payments linked to attendance)
+        // Adjust logic if Payment logic differs, assuming Payment linked to Attendance
+        $pendingAllowance = \App\Models\Payment::whereHas('attendance', function($q) use ($facilitator) {
+                                $q->where('facilitator_id', $facilitator->id);
+                            })
+                            ->where('payment_status', 'pending')
+                            ->sum('amount');
+        $pendingAllowance = 'RM' . number_format($pendingAllowance, 0);
 
         $assignments = Assignment::where('user_id', $user->id)
                                  ->with('event')
                                  ->orderBy('date_assigned', 'desc')
+                                 ->take(5) // Limit for Recent list
                                  ->get();
 
-        return view('dashboard.facilitator', compact('facilitator', 'assignments'));
+        return view('dashboard.facilitator', compact(
+            'facilitator', 
+            'assignments',
+            'totalAssignments',
+            'pendingAssignments',
+            'hoursWorked',
+            'pendingAllowance'
+        ));
     }
 
     // Show public profile
@@ -62,6 +94,7 @@ class FacilitatorController extends Controller
             'bank_name' => 'nullable|string',
             'bank_account_number' => 'nullable|string',
             'phone_number' => 'nullable|string',
+            'join_date' => 'nullable|date',
         ]);
 
         if (!$facilitator) {
