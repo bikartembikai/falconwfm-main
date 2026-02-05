@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Facilitator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -84,19 +83,21 @@ class RealFacilitatorSeeder extends Seeder
                 'email' => $email,
                 'password' => Hash::make('password'),
                 'role' => 'facilitator',
+                
+                'bankName' => 'Maybank',
+                'bankAccountNumber' => rand(1000000000, 9999999999),
+                'phoneNumber' => $data['phone'],
+                'experience' => rand(1, 10) . ' years experience in outdoor and indoor events.',
+                'joinDate' => now()->subMonths(rand(1, 48)),
+                'averageRating' => rand(35, 50) / 10
             ]);
 
-            // Assign 3-6 Random Skills
-            $randomSkills = collect($skills)->random(rand(3, 6))->implode(', ');
-            
-            Facilitator::create([
-                'user_id' => $user->id,
-                'skills' => $randomSkills,
-                'experience' => rand(1, 10) . ' years experience in outdoor and indoor events.',
-                'certifications' => 'Certified Trainer, First Aid',
-                'join_date' => now()->subMonths(rand(1, 48)),
-                'average_rating' => rand(35, 50) / 10 // 3.5 to 5.0
-            ]);
+            // Assign Random Skills
+            $randomSkills = collect($skills)->random(rand(3, 6));
+            foreach ($randomSkills as $skillName) {
+                $skill = \App\Models\Skill::firstOrCreate(['skillName' => $skillName]);
+                $user->skills()->attach($skill->skillID);
+            }
         }
     }
 }

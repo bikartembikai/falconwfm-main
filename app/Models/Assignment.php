@@ -6,24 +6,33 @@ use Illuminate\Database\Eloquent\Model;
 
 class Assignment extends Model
 {
+    protected $primaryKey = 'assignmentID';
+
     protected $fillable = [
-        'event_id',
-        'user_id',
-        'role',
-        'date_assigned'
+        'eventID',
+        'userID',
+        // 'role', removed from migration, assumed handled by User role or implication
+        'dateAssigned',
+        'clockInTime',
+        'clockOutTime',
+        'status',
+        'imageProof',
+        'attendanceStatus'
     ];
 
     protected $casts = [
-        'date_assigned' => 'datetime',
+        'dateAssigned' => 'datetime',
+        'clockInTime' => 'datetime',
+        'clockOutTime' => 'datetime',
     ];
 
     public function event()
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(Event::class, 'eventID', 'eventID');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'userID', 'userID');
     }
 }

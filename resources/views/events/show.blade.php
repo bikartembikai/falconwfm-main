@@ -5,17 +5,19 @@
     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
         <div>
             <h3 class="text-2xl leading-6 font-medium text-slate-900">
-                {{ $event->event_name }}
+                {{ $event->eventName }}
             </h3>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">
-                {{ $event->event_category }} • {{ $event->status }}
+                {{ $event->eventCategory }} • {{ $event->status }}
             </p>
         </div>
         <div class="text-right">
             <span class="block text-2xl font-bold text-indigo-600">
-                {{ $event->start_date_time->format('d M') }}
+                {{ $event->startDateTime ? $event->startDateTime->format('d M') : 'TBD' }}
             </span>
-            <span class="text-sm text-gray-500">{{ $event->start_date_time->format('h:i A') }}</span>
+            <span class="text-sm text-gray-500">
+                {{ $event->startDateTime ? $event->startDateTime->format('h:i A') : '' }}
+            </span>
         </div>
     </div>
     
@@ -25,7 +27,7 @@
             <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Description</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {{ $event->event_description }}
+                    {{ $event->eventDescription }}
                 </dd>
             </div>
             <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -35,15 +37,17 @@
                 </dd>
             </div>
             <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Required Skills / Logic</dt>
+                <dt class="text-sm font-medium text-gray-500">Required Skills</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        Category: {{ $event->event_category }}
+                        Category: {{ $event->eventCategory }}
                     </span>
-                    @if($event->required_skill_tag)
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
-                            {{ $event->required_skill_tag }}
-                        </span>
+                    @if($event->requiredSkills && is_array($event->requiredSkills))
+                        @foreach($event->requiredSkills as $skill)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                                {{ $skill }}
+                            </span>
+                        @endforeach
                     @endif
                 </dd>
             </div>
@@ -85,7 +89,7 @@
                         <div class="z-10">
                              <form action="{{ route('assignments.store') }}" method="POST">
                                 @csrf
-                                <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                <input type="hidden" name="event_id" value="{{ $event->eventID }}">
                                 <input type="hidden" name="facilitator_id" value="{{ $rec['id'] }}">
                                 <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                     Assign
@@ -100,7 +104,7 @@
                 <div class="flex">
                     <div class="ml-3">
                         <p class="text-sm text-yellow-700">
-                            No facilitators found matching the rules for <strong>{{ $event->event_category }}</strong>.
+                            No facilitators found matching the rules for <strong>{{ $event->eventCategory }}</strong>.
                         </p>
                     </div>
                 </div>

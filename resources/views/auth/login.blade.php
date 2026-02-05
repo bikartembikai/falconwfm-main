@@ -38,6 +38,7 @@
                 <select id="role" name="role" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="facilitator">Facilitator</option>
                     <option value="operation_manager">Operation Manager</option>
+                    <option value="marketing_manager">Marketing Manager</option>
                 </select>
             </div>
 
@@ -81,12 +82,13 @@
             Don't have an account? <a href="{{ route('register') }}" class="text-blue-400 hover:text-blue-300">Register here</a>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-slate-700 text-xs text-slate-500">
+        <!-- <div class="mt-8 pt-6 border-t border-slate-700 text-xs text-slate-500">
             <p class="mb-2">Demo Credentials:</p>
             <p><span class="text-slate-400">Facilitator:</span> sarah.bonding@falcon.com</p>
             <p><span class="text-slate-400">Operation Manager:</span> admin@falcon.com</p>
+            <p><span class="text-slate-400">Marketing Manager:</span> marketing@falcon.com</p>
             <p><span class="text-slate-400">Password:</span> password</p>
-        </div>
+        </div> -->
     </div>
 
 </body>

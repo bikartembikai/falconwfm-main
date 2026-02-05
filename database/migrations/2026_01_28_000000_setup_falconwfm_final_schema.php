@@ -14,127 +14,130 @@ return new class extends Migration
         Schema::dropIfExists('leaves');
         Schema::dropIfExists('performance_reviews');
         Schema::dropIfExists('payments');
-        Schema::dropIfExists('attendances');
         Schema::dropIfExists('assignments');
         Schema::dropIfExists('events');
-        Schema::dropIfExists('facilitators');
+        Schema::dropIfExists('event_rules');
+        Schema::dropIfExists('facilitator_skills'); 
+        Schema::dropIfExists('skills'); 
         Schema::dropIfExists('users');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         
         Schema::enableForeignKeyConstraints();
 
-        // 1. Users (Base Entity)
+        // 1. Users (Merged Entity)
         Schema::create('users', function (Blueprint $table) {
-            $table->id(); 
+            $table->id('userID'); // custom PK
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password'); 
             $table->string('role')->default('user'); // 'admin', 'facilitator', 'marketing_manager'
+            
+            // Merged Facilitator Attributes (camelCase)
+            $table->string('bankName')->nullable(); 
+            $table->string('bankAccountNumber')->nullable();
+            $table->string('phoneNumber')->nullable();
+            $table->text('experience')->nullable(); 
+            $table->date('joinDate')->nullable();
+            $table->double('averageRating')->default(0); 
+            
             $table->rememberToken();
             $table->timestamps();
         });
 
-        // 2. Facilitators (Extended Profile for Users)
-        Schema::create('facilitators', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            
-            // Attributes from FYP Report Data Dictionary (Figure 4.5)
-            $table->text('skills')->nullable();
-            $table->string('bank_name')->nullable(); 
-            $table->string('bank_account_number')->nullable();
-            $table->string('phone_number')->nullable();
-            $table->text('experience')->nullable();
-            $table->date('join_date')->nullable();
-            $table->double('average_rating')->default(0); 
-            $table->text('certifications')->nullable();
-            
+        // 1a. Skills (Master List)
+        Schema::create('skills', function (Blueprint $table) {
+            $table->id('skillID'); // custom PK
+            $table->string('skillName')->unique();
             $table->timestamps();
         });
 
-        // 2a. Event Rules (Knowledge Base Concept from ERD)
+        // 1b. Facilitator Skills (Pivot)
+        Schema::create('facilitator_skills', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('userID')->constrained('users', 'userID')->onDelete('cascade');
+            $table->foreignId('skillID')->constrained('skills', 'skillID')->onDelete('cascade');
+            $table->timestamps();
+        });
+        
+        // 2a. Event Rules
         Schema::create('event_rules', function (Blueprint $table) {
-            $table->string('event_category')->primary(); // PK as String (e.g. 'CAMP')
-            $table->text('required_skills')->nullable(); // JSON or Comma separated
-            $table->integer('min_experience')->default(0); // Years
-            $table->integer('min_rating')->default(0); // 1-5
-            $table->string('intensity_level')->default('Normal'); // 'High Risk', 'Normal'
+            $table->string('eventCategory')->primary(); // camelCase PK
+            $table->text('requiredSkill')->nullable(); // array json
+            $table->integer('minExperience')->default(0); 
+            $table->integer('minRating')->default(0); 
+            // requiredSpecialization removed from strict ERD request? 
+            // Previous code expected it. I'll re-add it as camelCase to match code expectations unless strictly forbidden.
+            // The user said "exactly as inside this relational table". The table 'EventRule' has: eventCategory, requiredSkill, minExperience, minRating. 
+            // It DOES NOT show requiredSpecialization. I will omit it to be exact to the diagram.
             $table->timestamps();
         });
 
         // 3. Events (Core Entity)
         Schema::create('events', function (Blueprint $table) {
-            $table->id(); // eventID
-            $table->string('event_name'); 
+            $table->id('eventID'); // custom PK
+            $table->string('eventName'); 
             $table->string('venue')->nullable(); 
-            $table->text('event_description')->nullable(); 
+            $table->text('eventDescription')->nullable(); 
             
-            // Foreign Key link to EventRule (can be nullable if strictly following diagram flow where not all events might have rules, but good to enforce)
-            $table->string('event_category')->nullable();
-            $table->foreign('event_category')->references('event_category')->on('event_rules')->onDelete('set null');
+            // Foreign Key link to EventRule
+            $table->string('eventCategory')->nullable();
+            $table->foreign('eventCategory')->references('eventCategory')->on('event_rules')->onDelete('set null');
 
             $table->string('status')->default('upcoming'); 
             $table->integer('quota')->default(0); 
-            $table->dateTime('start_date_time'); 
-            $table->dateTime('end_date_time')->nullable(); 
-            $table->text('required_skill_tag')->nullable(); // Helper
+            $table->dateTime('startDateTime'); 
+            $table->dateTime('endDateTime')->nullable(); 
+            $table->integer('totalParticipants')->default(0); 
             $table->text('remark')->nullable();
             $table->timestamps();
         });
 
-        // 4. Assignments (Linking Facilitators to Events)
+        // 4. Assignments (Linking Facilitators to Events AND Attendance)
         Schema::create('assignments', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('event_id')->constrained('events')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Points to User (Facilitator)
-            $table->dateTime('date_assigned')->useCurrent(); 
-            $table->string('role')->nullable(); // e.g., 'Chief', 'Medic', 'Support'
-            $table->timestamps();
-        });
-
-        // 5. Attendance (Tracking)
-        Schema::create('attendances', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('event_id')->constrained('events')->onDelete('cascade');
-            $table->foreignId('facilitator_id')->constrained('facilitators')->onDelete('cascade'); // Specific to Facilitator Profile
+            $table->id('assignmentID'); // custom PK
+            $table->foreignId('eventID')->constrained('events', 'eventID')->onDelete('cascade');
+            $table->foreignId('userID')->constrained('users', 'userID')->onDelete('cascade'); 
+            $table->dateTime('dateAssigned')->useCurrent(); 
             
-            $table->dateTime('clock_in_time')->nullable(); 
-            $table->dateTime('clock_out_time')->nullable(); 
-            $table->string('status')->default('absent'); // 'present', 'late', 'absent'
-            $table->string('image_proof')->nullable(); 
+            // Attendance Columns Merged Here
+            $table->dateTime('clockInTime')->nullable();
+            $table->dateTime('clockOutTime')->nullable();
+            $table->string('status')->default('assigned'); 
+            $table->string('attendanceStatus')->default('absent'); 
+            $table->string('imageProof')->nullable(); 
+
             $table->timestamps();
         });
 
-        // 6. Payments (Financial)
+        // 5. Payments (Financial)
         Schema::create('payments', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('attendance_id')->constrained('attendances')->onDelete('cascade');
+            $table->id('paymentID'); // custom PK
+            $table->foreignId('assignmentID')->constrained('assignments', 'assignmentID')->onDelete('cascade');
             $table->decimal('amount', 10, 2); 
-            $table->string('payment_status')->default('pending'); 
-            $table->string('payment_proof')->nullable(); 
-            $table->date('payment_date')->nullable(); 
+            $table->string('paymentStatus')->default('pending'); 
+            $table->string('paymentProof')->nullable(); 
+            $table->dateTime('paymentDate')->nullable(); 
             $table->timestamps();
         });
 
-        // 7. Performance Reviews (Feedback)
+        // 6. Performance Reviews (Feedback)
         Schema::create('performance_reviews', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('facilitator_id')->constrained('facilitators')->onDelete('cascade');
-            $table->integer('rating'); // 1-5
-            $table->text('feedback_comments')->nullable(); 
-            $table->date('date_submitted')->useCurrent(); 
-            $table->string('role')->nullable(); // Context
+            $table->id('reviewID'); // custom PK
+            $table->foreignId('userID')->constrained('users', 'userID')->onDelete('cascade');
+            $table->integer('rating'); 
+            $table->text('comments')->nullable(); 
+            $table->dateTime('dateSubmitted')->useCurrent(); 
             $table->timestamps();
         });
 
-        // 8. Leaves (Availability Constraint)
+        // 7. Leaves (Availability Constraint)
         Schema::create('leaves', function (Blueprint $table) {
-            $table->id(); 
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); 
-            $table->date('start_date'); 
-            $table->date('end_date'); 
+            $table->id('leaveID'); // custom PK
+            $table->foreignId('userID')->constrained('users', 'userID')->onDelete('cascade'); 
+            $table->date('startDate'); 
+            $table->date('endDate'); 
             $table->string('status')->default('pending'); 
             $table->text('reason')->nullable(); 
             $table->timestamps();
@@ -149,7 +152,10 @@ return new class extends Migration
         
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignId('user_id')->nullable()->index(); // standard session table usually keeps strict convention or fails? 
+            // Auth::id() will return userID. 
+            // Session driver might expect user_id. I will keep user_id here to be safe with framework internals, 
+            // unless I want to change 'user_id' -> 'userID' here too? safer to keep user_id for built-in session.
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -159,15 +165,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('leaves');
         Schema::dropIfExists('performance_reviews');
         Schema::dropIfExists('payments');
-        Schema::dropIfExists('attendances');
         Schema::dropIfExists('assignments');
         Schema::dropIfExists('events');
         Schema::dropIfExists('event_rules');
-        Schema::dropIfExists('facilitators');
+        Schema::dropIfExists('facilitator_skills');
+        Schema::dropIfExists('skills');
         Schema::dropIfExists('users');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');

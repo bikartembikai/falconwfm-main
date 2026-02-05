@@ -9,35 +9,35 @@ class Event extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'eventID';
+
     protected $fillable = [
-        'event_name',
+        'eventName', 
         'venue',
-        'event_description',
-        'event_category',
-        'required_skill_tag', // Helper
+        'eventDescription', 
+        'eventCategory', 
         'status',
         'quota',
-        'start_date_time',
-        'end_date_time',
+        'startDateTime', 
+        'endDateTime', 
+        'totalParticipants',
+        'remark'
     ];
 
     protected $casts = [
-        'start_date_time' => 'datetime',
-        'end_date_time' => 'datetime',
+        'startDateTime' => 'datetime',
+        'endDateTime' => 'datetime',
     ];
 
     public function assignments()
     {
-        return $this->hasMany(Assignment::class);
+        return $this->hasMany(Assignment::class, 'eventID', 'eventID');
     }
 
-    public function attendances()
-    {
-        return $this->hasMany(Attendance::class);
-    }
+    // Attendance removed, tied to Assignment now via status/clock times
 
     public function rule()
     {
-        return $this->belongsTo(EventRule::class, 'event_category', 'event_category');
+        return $this->belongsTo(EventRule::class, 'eventCategory', 'eventCategory');
     }
 }

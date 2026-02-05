@@ -2,103 +2,92 @@
 
 namespace App\Services;
 
-use App\Models\Facilitator;
+use App\Models\User;
 use App\Models\Event;
+use App\Models\EventRule;
 
 class RecommendationService
 {
     /**
-     * Rules Mapping: Event Type => Criteria 1: Skills Needed
-     */
-    protected $rules = [
-        'TEAM BUILDING' => [
-            'Speaking', 'Medic', 'Leadership', 'Facilitating'
-        ],
-        'TALK' => [
-            'Speaking', 'Leadership', 'Public Speaking', 'Facilitating'
-        ],
-        'CAMP' => [
-            'Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 
-            'Motivation', 'Religious', 'Survival', 'Logistics'
-        ],
-        'WORKSHOP' => [
-            'Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 
-            'Time Management', 'Leadership', 'Organization Management', 'Logistics'
-        ],
-        'HOLIDAY' => [
-            'Medic', 'Swimming', 'Logistic' // Image says 'Logistic'
-        ]
-    ];
-
-    /**
-     * Recommend Facilitators for an Event (Rule-Based)
+     * Recommend Facilitators for an Event (Rule-Based from Database)
      */
     public function recommend($eventInput, $limit = 5)
     {
-        $targetKeywords = [];
         $eventCategory = '';
+        $customSkills = [];
 
-        if (is_object($eventInput) && isset($eventInput->event_category)) {
-            $eventCategory = strtoupper($eventInput->event_category);
-            
-            // Map common aliases
-            $mapping = [
-                'CERAMAH' => 'TALK',
-                'KEM' => 'CAMP',
-                'KURSUS/BENGKEL' => 'WORKSHOP',
-                'PERCUTIAN' => 'HOLIDAY'
-            ];
-            if (isset($mapping[$eventCategory])) {
-                $eventCategory = $mapping[$eventCategory];
-            }
+        if (is_object($eventInput) && isset($eventInput->eventCategory)) {
+            $eventCategory = strtoupper($eventInput->eventCategory);
+            // Alias Mapping
+            $eventCategory = $this->mapCategoryAlias($eventCategory);
 
-            if (isset($this->rules[$eventCategory])) {
-                $targetKeywords = array_merge($targetKeywords, $this->rules[$eventCategory]);
+            if (isset($eventInput->requiredSkillTag) && !empty($eventInput->requiredSkillTag)) {
+                $customSkills[] = $eventInput->requiredSkillTag;
             }
-            if (!empty($eventInput->required_skill_tag)) {
-                $targetKeywords[] = $eventInput->required_skill_tag;
-            }
-            $infoText = $eventInput->event_name . ' ' . $eventInput->event_description;
-            // No, rule based is strict. Let's rely on rules mainly. 
-            // But let's add text matches too for robustness or just strict rules?
-            // User asked for "match with this types". Let's assume strict skills.
-            // But code I wrote combines text search. Let's keep hybrid for robustness.
-            $targetKeywords = array_merge($targetKeywords, $this->extractKeywordsFromText($infoText));
-
         } else {
-            $text = (string)$eventInput;
-            $targetKeywords = $this->extractKeywordsFromText($text);
-        }
-
-        $targetKeywords = array_unique(array_map('strtolower', $targetKeywords));
-        
-        if (empty($targetKeywords)) {
             return [];
         }
 
-        $facilitators = Facilitator::with('user')->get();
+        // 1. Fetch Rule
+        // 1. Fetch Rule
+        $rule = EventRule::find($eventCategory);
+        
+        $requiredSkills = $rule ? ($rule->requiredSkill ?? []) : [];
+        //$requiredSpecialization = $rule ? $rule->requiredSpecialization : null; // Removed from migration
+        $minExperience = $rule ? $rule->minExperience : 0;
+        $minRating = $rule ? $rule->minRating : 0;
+
+        // Merge custom skills
+        $targetSkills = array_unique(array_merge($requiredSkills, $customSkills));
+        $targetSkills = array_map('strtolower', $targetSkills);
+
+        if (empty($targetSkills)) {
+            return [];
+        }
+
+        // FETCH USERS WITH ROLE 'facilitator' AND THEIR SKILLS
+        $facilitators = User::where('role', 'facilitator')
+                            ->with('skills')
+                            ->get();
         $scores = [];
 
         foreach ($facilitators as $facil) {
-            $facilText = strtolower(
-                ($facil->skills ?? '') . ' ' . 
-                ($facil->experience ?? '') . ' ' . 
-                ($facil->certifications ?? '')
-            );
-
             $score = 0;
             $matches = [];
-            foreach ($targetKeywords as $keyword) {
-                if (strpos($facilText, $keyword) !== false) {
-                    $score++;
-                    $matches[] = $keyword;
+            $reasons = [];
+
+            // A. Skill Match (+1 per skill)
+            // Get array of skill names from pivot
+            $facilSkills = $facil->skills->pluck('skillName')->map(fn($s) => strtolower($s))->toArray();
+            
+            foreach ($targetSkills as $skill) {
+                // Check if target skill is in facilitator's skill list
+                // Using relaxed matching (strpos-like) or exact? Ideally exact now that we have normalized skills.
+                // But let's keep strpos logic for flexibility if needed, or stick to exact.
+                // Given "Speaking" vs "Public Speaking", simple in_array might fail if strict.
+                // Let's use partial match check against normalized array.
+                
+                foreach ($facilSkills as $fSkill) {
+                    if (strpos($fSkill, $skill) !== false || strpos($skill, $fSkill) !== false) {
+                         $score += 1;
+                         $matches[] = $skill;
+                         break; // Count skill once
+                    }
                 }
             }
 
+            // B. Specialization Match (Removed as per request)
+            
+            // C. Rating Check
+            if ($facil->averageRating < $minRating) {
+                $score -= 2; // Penalize low rating
+            }
+
             if ($score > 0) {
-                $scores[$facil->id] = [
+                $scores[$facil->userID] = [
                     'score' => $score,
-                    'matches' => $matches
+                    'matches' => $matches,
+                    'reasons' => $reasons
                 ];
             }
         }
@@ -113,48 +102,47 @@ class RecommendationService
     /**
      * Recommend Events for a Facilitator (Reverse Match)
      */
-    public function recommendEvents($facilitatorId, $limit = 5)
+    public function recommendEvents($userId, $limit = 5)
     {
-        $facilitator = Facilitator::find($facilitatorId);
-        if (!$facilitator) return [];
+        $facilitator = User::find($userId);
+        if (!$facilitator || $facilitator->role !== 'facilitator') return [];
 
-        $facilText = strtolower(
-            ($facilitator->skills ?? '') . ' ' . 
-            ($facilitator->experience ?? '')
-        );
+        $facilSkills = $facilitator->skills->pluck('skillName')->map(fn($s) => strtolower($s))->toArray();
 
         // Fetch upcoming events
         $events = Event::where('status', 'upcoming')->get();
         $scores = [];
 
         foreach ($events as $event) {
-            $requiredKeywords = [];
-            $cat = strtoupper($event->event_category ?? '');
+            $cat = strtoupper($event->eventCategory ?? '');
+            $cat = $this->mapCategoryAlias($cat);
+
+            $rule = EventRule::find($cat);
+            if (!$rule) continue;
+
+            $requiredSkills = $rule ? ($rule->requiredSkill ?? []) : [];
             
-            // Map
-            $mapping = [
-                'CERAMAH' => 'TALK',
-                'KEM' => 'CAMP',
-                'KURSUS/BENGKEL' => 'WORKSHOP',
-                'PERCUTIAN' => 'HOLIDAY'
-            ];
-            if (isset($mapping[$cat])) $cat = $mapping[$cat];
-
-            if (isset($this->rules[$cat])) {
-                $requiredKeywords = $this->rules[$cat];
-            }
-            // Add custom
-            if ($event->required_skill_tag) {
-                $requiredKeywords[] = $event->required_skill_tag;
-            }
-
-            // Calculate overlap
             $score = 0;
             $matches = [];
-            foreach ($requiredKeywords as $keyword) {
-                if (strpos($facilText, strtolower($keyword)) !== false) {
-                    $score++;
-                    $matches[] = $keyword;
+
+            // A. Skills
+            foreach ($requiredSkills as $skill) {
+                $skillLower = strtolower($skill);
+                foreach ($facilSkills as $fSkill) {
+                    if (strpos($fSkill, $skillLower) !== false || strpos($skillLower, $fSkill) !== false) {
+                        $score += 1;
+                        $matches[] = $skill;
+                        break;
+                    }
+                }
+            }
+
+            // B. Specialization (Removed)
+
+            // C. Experience/Rating
+            if ($rule) {
+                if ($facilitator->averageRating < $rule->minRating) {
+                    $score -= 2;
                 }
             }
 
@@ -178,11 +166,11 @@ class RecommendationService
             $evt = $events->find($id);
             if ($evt) {
                 $results[] = [
-                    'id' => $evt->id,
-                    'name' => $evt->event_name,
-                    'category' => $evt->event_category,
+                    'id' => $evt->eventID,
+                    'name' => $evt->eventName,
+                    'category' => $evt->eventCategory,
                     'match_score' => $data['score'],
-                    'matched_keywords' => implode(', ', array_unique($data['matches']))
+                    'matched_keywords' => implode(', ', $data['matches'])
                 ];
                 $count++;
             }
@@ -190,21 +178,15 @@ class RecommendationService
         return $results;
     }
 
-    private function extractKeywordsFromText($text)
+    private function mapCategoryAlias($category)
     {
-        $found = [];
-        $text = strtolower($text);
-        foreach ($this->rules as $category => $keywords) {
-            if (strpos($text, strtolower($category)) !== false) {
-                $found = array_merge($found, $keywords);
-            }
-            foreach ($keywords as $k) {
-                if (strpos($text, strtolower($k)) !== false) {
-                    $found[] = $k;
-                }
-            }
-        }
-        return $found;
+        $mapping = [
+            'CERAMAH' => 'TALK',
+            'KEM' => 'CAMP',
+            'KURSUS/BENGKEL' => 'WORKSHOP',
+            'PERCUTIAN' => 'HOLIDAY'
+        ];
+        return $mapping[$category] ?? $category;
     }
 
     private function formatFacilitatorResults($scores, $facilitators, $limit)
@@ -215,13 +197,17 @@ class RecommendationService
             if ($count >= $limit) break;
             $facilitator = $facilitators->find($id);
             if ($facilitator) {
+                $extraReasons = isset($data['reasons']) ? implode(', ', $data['reasons']) : '';
+                $matchStr = implode(', ', array_unique($data['matches']));
+                if ($extraReasons) $matchStr .= " | $extraReasons";
+
                 $results[] = [
-                    'id' => $facilitator->id,
-                    'name' => $facilitator->user ? $facilitator->user->name : 'Unknown',
+                    'id' => $facilitator->userID,
+                    'name' => $facilitator->name, // Direct name from User
                     'match_score' => $data['score'], 
-                    'matched_keywords' => implode(', ', array_unique($data['matches'])),
-                    'skills' => $facilitator->skills,
-                    'experience' => $facilitator->experience
+                    'matched_keywords' => $matchStr,
+                    'skills' => $facilitator->skills->pluck('skillName')->implode(', '),
+                    'experience' => $facilitator->experience // Merged attribute
                 ];
                 $count++;
             }
@@ -229,3 +215,4 @@ class RecommendationService
         return $results;
     }
 }
+

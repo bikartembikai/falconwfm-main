@@ -41,6 +41,9 @@ class AuthController extends Controller
             if ($user->role === 'admin' || $user->role === 'operation_manager') {
                 return redirect()->route('admin.payments'); // or events.index
             }
+            if ($user->role === 'marketing_manager') {
+                return redirect()->route('events.index'); // or events.index
+            }
             
             return redirect()->route('events.index');
         }

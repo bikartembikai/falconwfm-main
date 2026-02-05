@@ -15,9 +15,36 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password'), // Add password if missing in factory default
+                'role' => 'user'
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'm.amir.afham@gmail.com'],
+            [
+                'name' => 'Amir Afham',
+                'password' => bcrypt('12345678'),
+                'role' => 'operation_manager',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'm.amir.afham55@gmail.com'],
+            [
+                'name' => 'Amir Afham (Marketing)',
+                'password' => bcrypt('12345678'),
+                'role' => 'marketing_manager',
+            ]
+        );
+
+        $this->call([
+            RuleSeeder::class,
+            RealFacilitatorSeeder::class,
         ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Assignment;
+use App\Models\EventRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\RecommendationService;
@@ -11,47 +12,99 @@ use App\Services\RecommendationService;
 class EventController extends Controller
 {
     // List all events
+    // List all events
     public function index(Request $request)
     {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        // 1. Facilitator View
+        if ($user->role === 'facilitator') {
+            $events = Event::where('status', 'upcoming')
+                        ->with('assignments')
+                        ->orderBy('startDateTime', 'asc')
+                        ->get();
+            $totalEvents = $events->count();
+            
+            return view('dashboard.facilitator', compact('user', 'events', 'totalEvents'));
+        }
+
+        // 2. Manager View
+        if (!in_array($user->role, ['admin', 'operation_manager', 'marketing_manager'])) {
+             abort(403, 'Unauthorized action.');
+        }
+
         $query = Event::with('assignments');
 
-        // Status Filtering
-        if ($request->has('status')) {
-            if ($request->status == 'pending') {
-                $query->whereRaw('(select count(*) from assignments where assignments.event_id = events.id) < events.quota');
-            } elseif ($request->status == 'fully_assigned') {
-                 $query->whereRaw('(select count(*) from assignments where assignments.event_id = events.id) >= events.quota');
-            }
+        // Search
+        if ($request->has('search') && $request->search != '') {
+             $query->where('eventName', 'like', '%' . $request->search . '%')
+                   ->orWhere('venue', 'like', '%' . $request->search . '%');
         }
+
+        // Category Filter
+        if ($request->has('category') && $request->category != 'All Categories' && $request->category != '') {
+            $query->where('eventCategory', $request->category);
+        }
+
+        // Status Filter
+        if ($request->has('status') && $request->status != 'All Status' && $request->status != '') {
+            $query->where('status', strtolower($request->status));
+        }
+
+        $events = $query->orderBy('startDateTime', 'asc')->get();
+        $categories = EventRule::pluck('eventCategory');
+
+        // Automatic Status Updates based on Time
+        $now = now();
         
-        if ($request->has('category') && $request->category != '') {
-            $query->where('event_category', $request->category);
-        }
+        // Mark as Ongoing if started and not ended
+        Event::where('startDateTime', '<=', $now)
+             ->where('endDateTime', '>=', $now)
+             ->where('status', '!=', 'ongoing')
+             ->update(['status' => 'ongoing']);
 
-        if ($request->has('search')) {
-            $query->where('event_name', 'like', '%' . $request->search . '%');
-        }
+        // Mark as Completed if ended
+        Event::where('endDateTime', '<', $now)
+             ->where('status', '!=', 'completed')
+             ->update(['status' => 'completed']);
+             
+        // Mark as Upcoming if in future (just in case dates changed)
+        Event::where('startDateTime', '>', $now)
+             ->where('status', '!=', 'upcoming')
+             ->update(['status' => 'upcoming']);
 
-        $events = $query->where('status', 'upcoming')->orderBy('start_date_time', 'asc')->get();
+        // Stats Calculation
+        $totalEventsCount = Event::count();
+        $scheduledCount = Event::where('status', 'upcoming')->orWhere('status', 'scheduled')->count();
+        $ongoingCount = Event::where('status', 'ongoing')->count();
+        $completedCount = Event::where('status', 'completed')->count();
 
-        // Stats
-        $allUpcoming = Event::where('status', 'upcoming')->withCount('assignments')->get();
-        $totalEvents = $allUpcoming->count();
-        $pendingAssignment = $allUpcoming->filter(function($e) {
-            return $e->assignments_count < $e->quota;
-        })->count();
-        $fullyAssigned = $allUpcoming->filter(function($e) {
-            return $e->assignments_count >= $e->quota;
-        })->count();
 
-        return view('events.index', compact('events', 'totalEvents', 'pendingAssignment', 'fullyAssigned'));
+        return view('events.index', compact('events', 'categories', 'totalEventsCount', 'scheduledCount', 'ongoingCount', 'completedCount'));
     }
 
     // Show single event details with Recommendations
     public function show($id)
     {
         $event = Event::with('assignments.user')->findOrFail($id);
+        $user = Auth::user();
+
+        // Fetch Rule for requirements display
+        $rule = EventRule::find($event->eventCategory) ?? EventRule::find(strtoupper($event->eventCategory)); // Try exact or upper
+
+        // 1. Marketing Manager View
+        if ($user->role === 'marketing_manager') {
+            if (request()->ajax() || request()->query('modal')) {
+                return view('events.partials.show_marketing_modal', compact('event', 'rule'));
+            }
+            return view('events.show_marketing', compact('event', 'rule'));
+        }
         
+        // 2. Standard View (Admin/Ops) - With Recommendations
         // Fetch Rule-Based Recommendations
         $recommender = new RecommendationService();
         $recommendations = $recommender->recommend($event);
@@ -62,40 +115,83 @@ class EventController extends Controller
     // Show create form
     public function create()
     {
-        return view('events.create');
+        if (Auth::user()->role !== 'marketing_manager') {
+            abort(403, 'Unauthorized action.');
+        }
+        $categories = EventRule::pluck('eventCategory');
+        // Pass all rules to view for dynamic skill display
+        $eventRules = EventRule::all()->keyBy('eventCategory');
+        return view('events.create', compact('categories', 'eventRules'));
     }
 
     // Store new event
     public function store(Request $request)
     {
+        if (Auth::user()->role !== 'marketing_manager') {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
+            'eventName' => 'required|string|max:255',
             'venue' => 'required|string|max:255',
-            'event_description' => 'nullable|string',
-            'event_category' => 'required|string',
-            'required_skill_tag' => 'nullable|string',
+            'eventDescription' => 'nullable|string',
+            'eventCategory' => 'required|string',
             'quota' => 'required|integer|min:1',
-            'start_date_time' => 'required|date',
-            'end_date_time' => 'nullable|date|after:start_date_time',
+            'totalParticipants' => 'required|integer|min:1', // Added as per request
+            'startDateTime' => 'required|date',
+            'endDateTime' => 'nullable|date|after:startDateTime',
         ]);
 
+        // Auto-populate requiredSkills from Category Rule
+        $rule = EventRule::where('eventCategory', $validated['eventCategory'])->first();
+
+        if ($rule) {
+            $validated['requiredSkills'] = $rule->requiredSkill; // Assuming Cast array
+        } else {
+            $validated['requiredSkills'] = [];
+        }
         Event::create($validated);
 
         return redirect()->route('events.index')->with('success', 'Event created successfully.');
     }
+    
+    // Edit Event
+    public function edit($id)
+    {
+         if (Auth::user()->role !== 'marketing_manager') {
+            abort(403, 'Unauthorized action.');
+        }
+         $event = Event::findOrFail($id);
+         $categories = EventRule::pluck('eventCategory');
+         $eventRules = EventRule::all()->keyBy('eventCategory');
+         
+         return view('events.edit', compact('event', 'categories', 'eventRules'));
+    }
+
     public function update(Request $request, $id)
     {
+        if (Auth::user()->role !== 'marketing_manager') {
+            abort(403, 'Unauthorized action.');
+        }
         $event = Event::findOrFail($id);
         
         $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
+            'eventName' => 'required|string|max:255',
             'venue' => 'required|string|max:255',
-            'event_description' => 'nullable|string',
-            'event_category' => 'required|string',
+            'eventDescription' => 'nullable|string',
+            'eventCategory' => 'required|string',
             'quota' => 'required|integer|min:1',
-            'start_date_time' => 'required|date',
-            'end_date_time' => 'nullable|date|after:start_date_time',
+            'totalParticipants' => 'required|integer|min:1',
+            'startDateTime' => 'required|date',
+            'endDateTime' => 'nullable|date|after:startDateTime',
         ]);
+
+        // Recalculate skills if category changed (or just always update based on rule)
+        $rule = EventRule::where('eventCategory', $validated['eventCategory'])->first();
+        if ($rule) {
+            $validated['requiredSkills'] = $rule->requiredSkill;
+        } else {
+             $validated['requiredSkills'] = [];
+        }
 
         $event->update($validated);
 
@@ -105,6 +201,9 @@ class EventController extends Controller
     // Delete event
     public function destroy($id)
     {
+        if (Auth::user()->role !== 'marketing_manager') {
+            abort(403, 'Unauthorized action.');
+        }
         $event = Event::findOrFail($id);
         $event->delete();
         

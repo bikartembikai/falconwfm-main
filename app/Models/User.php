@@ -17,10 +17,24 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+    protected $primaryKey = 'userID';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'bankName', 
+        'bankAccountNumber', 
+        'phoneNumber', 
+        'experience', 
+        'joinDate', 
+        'averageRating', 
     ];
 
     /**
@@ -43,20 +57,27 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'joinDate' => 'date', 
         ];
-    }
-    public function facilitator()
-    {
-        return $this->hasOne(Facilitator::class);
     }
 
     public function assignments()
     {
-        return $this->hasMany(Assignment::class);
+        return $this->hasMany(Assignment::class, 'userID', 'userID');
     }
 
     public function leaves()
     {
-        return $this->hasMany(Leave::class);
+        return $this->hasMany(Leave::class, 'userID', 'userID');
+    }
+
+    public function skills()
+    {
+        return $this->belongsToMany(Skill::class, 'facilitator_skills', 'userID', 'skillID');
+    }
+
+    public function performanceReviews()
+    {
+        return $this->hasMany(PerformanceReview::class, 'userID', 'userID');
     }
 }

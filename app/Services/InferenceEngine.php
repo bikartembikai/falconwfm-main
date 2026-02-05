@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Facilitator;
+use App\Models\User;
 use App\Models\Event;
 use Carbon\Carbon;
 
@@ -39,15 +39,17 @@ class InferenceEngine
     public function analyzeFacilitators($event)
     {
         // 1. Data Fuzzification / Normalization
-        $category = $this->normalizeCategory($event->event_category ?? '');
-        $eventStart = $event->start_date_time ? Carbon::parse($event->start_date_time) : null;
-        $eventEnd = $event->end_date_time ? Carbon::parse($event->end_date_time) : null;
+        $category = $this->normalizeCategory($event->eventCategory ?? '');
+        $eventStart = $event->startDateTime ? Carbon::parse($event->startDateTime) : null;
+        $eventEnd = $event->endDateTime ? Carbon::parse($event->endDateTime) : null;
         
         // Load Rule from Knowledge Base (Database)
         $rule = \App\Models\EventRule::find($category);
         
         // Load Facts (Facilitators with History)
-        $facilitators = Facilitator::with(['user.assignments.event', 'user.leaves'])->get();
+        $facilitators = User::where('role', 'facilitator')
+                            ->with(['assignments.event', 'leaves', 'skills'])
+                            ->get();
         
         $results = [];
 
@@ -60,9 +62,9 @@ class InferenceEngine
                 $status = 'busy';
                 $debugReason = $reason;
             }
-            $skillMatchScore = $this->calculateSkillMatch($facil, $rule, $event->required_skill_tag ?? null);
+            $skillMatchScore = $this->calculateSkillMatch($facil, $rule, $event->requiredSkillTag ?? null);
             if ($status === 'available' && $skillMatchScore <= 0) {
-                if ($rule && !empty($rule->required_skills)) {
+                if ($rule && !empty($rule->requiredSkill)) {
                     $status = 'unqualified'; 
                     $reason = "No matching skills for {$category}";
                     $debugReason = $reason;
@@ -73,20 +75,20 @@ class InferenceEngine
                 $status = 'unqualified';
                 $debugReason = $reason;
             }
-            $rating = $facil->average_rating ?? 0;
+            $rating = $facil->averageRating ?? 0;
             $suitabilityScore = ($rating * 2) + $skillMatchScore;
 
             $results[] = [
-                'id' => $facil->id,
-                'user_id' => $facil->user_id,
-                'name' => $facil->user ? $facil->user->name : 'Unknown',
-                'email' => $facil->user ? $facil->user->email : '',
+                'id' => $facil->userID, // PK is userID
+                'user_id' => $facil->userID, 
+                'name' => $facil->name,
+                'email' => $facil->email, // Direct
                 'match_score' => $suitabilityScore,
                 'skills_matched' => $skillMatchScore,
                 'rating' => $rating,
-                'skills' => $facil->skills,
+                'skills' => $facil->skills->pluck('skillName')->implode(', '),
                 'experience' => $facil->experience,
-                'join_date' => $facil->join_date,
+                'join_date' => $facil->joinDate,
                 'status' => $status, 
                 'reason' => $reason
             ];
@@ -103,25 +105,25 @@ class InferenceEngine
     {
         if (!$start || !$end) return true; 
 
-        if ($facil->user && $facil->user->assignments) {
-            foreach ($facil->user->assignments as $assign) {
+        if ($facil->assignments) {
+            foreach ($facil->assignments as $assign) {
                 if ($assign->event) {
-                    $aStart = Carbon::parse($assign->event->start_date_time);
-                    $aEnd = Carbon::parse($assign->event->end_date_time);
+                    $aStart = Carbon::parse($assign->event->startDateTime);
+                    $aEnd = Carbon::parse($assign->event->endDateTime);
                     
                     if ($start->lessThanOrEqualTo($aEnd) && $end->greaterThanOrEqualTo($aStart)) {
-                        $reason = "Already assigned to event: " . $assign->event->event_name;
+                        $reason = "Already assigned to event: " . $assign->event->eventName;
                         return false;
                     }
                 }
             }
         }
 
-        if ($facil->user && $facil->user->leaves) {
-            foreach ($facil->user->leaves as $leave) {
+        if ($facil->leaves) {
+            foreach ($facil->leaves as $leave) {
                 if ($leave->status === 'approved') {
-                    $lStart = Carbon::parse($leave->start_date);
-                    $lEnd = Carbon::parse($leave->end_date);
+                    $lStart = Carbon::parse($leave->startDate);
+                    $lEnd = Carbon::parse($leave->endDate);
 
                     if ($start->lessThanOrEqualTo($lEnd) && $end->greaterThanOrEqualTo($lStart)) {
                         $reason = "On approved leave";
@@ -136,18 +138,23 @@ class InferenceEngine
 
     private function calculateSkillMatch($facil, $rule, $requiredTag)
     {
-        $targetSkills = $rule ? ($rule->required_skills ?? []) : [];
+        $targetSkills = $rule ? ($rule->requiredSkill ?? []) : [];
         
         if ($requiredTag) {
             $targetSkills[] = $requiredTag;
         }
         
-        $facilSkills = strtolower($facil->skills ?? '');
+        // Facil skills array from relation
+        $facilSkills = $facil->skills->pluck('skillName')->map(fn($s) => strtolower($s))->toArray();
         $match = 0;
 
         foreach ($targetSkills as $skill) {
-            if (strpos($facilSkills, strtolower($skill)) !== false) {
-                $match++;
+            $skillLower = strtolower($skill);
+            foreach ($facilSkills as $fSkill) {
+                if (strpos($fSkill, $skillLower) !== false || strpos($skillLower, $fSkill) !== false) {
+                    $match++;
+                    break; 
+                }
             }
         }
 
@@ -158,13 +165,13 @@ class InferenceEngine
     {
         if (!$rule) return true;
 
-        $isHighRisk = strtolower($rule->intensity_level) === 'high risk';
-        $minExp = $rule->min_experience;
+        // $isHighRisk = strtolower($rule->intensity_level) === 'high risk'; // Removed
+        $minExp = $rule->minExperience;
 
-        if ($isHighRisk || $minExp > 0) {
+        if ($minExp > 0) {
             $tenureYears = 0;
-            if ($facil->join_date) {
-                $tenureYears = Carbon::parse($facil->join_date)->diffInYears(now());
+            if ($facil->joinDate) {
+                $tenureYears = Carbon::parse($facil->joinDate)->diffInYears(now());
             }
 
             if ($tenureYears < $minExp) {
@@ -187,3 +194,4 @@ class InferenceEngine
         return $mapping[$cat] ?? $cat;
     }
 }
+

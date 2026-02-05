@@ -5,10 +5,10 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Event;
 use App\Models\User;
-use App\Models\Facilitator;
 use App\Models\Leave;
-use App\Models\Attendance;
+use App\Models\Assignment;
 use App\Models\Payment;
+use App\Models\Skill;
 use Illuminate\Support\Facades\DB;
 
 class RecommendationVerificationSeeder extends Seeder
@@ -19,17 +19,17 @@ class RecommendationVerificationSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         User::truncate(); 
         Event::truncate(); 
-        Facilitator::truncate();
+        // Facilitator::truncate(); // Removed
         Leave::truncate();
-        Attendance::truncate();
+        Assignment::truncate();
         Payment::truncate();
-        DB::table('assignments')->truncate();
+        DB::table('facilitator_skills')->truncate();
+        Skill::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // ----------------------------------------------------------------
         // 1. Create Facilitators (with New Skills)
         // ----------------------------------------------------------------
-        // Skills: Speaking, Medic, Leadership, Facilitating, Public Speaking, Hiking, Trekking, Motivation, Religious, Survival, Logistics, Teaching, Archery, Time Management, Organization Management, Swimming, Logistic
         $profiles = [
             // Matches Team Building & Talk
             ['name' => 'Alice Leader', 'skills' => 'Speaking Leadership Facilitating Public Speaking', 'bank' => 'Maybank', 'acct' => '111'],
@@ -55,17 +55,20 @@ class RecommendationVerificationSeeder extends Seeder
                 'name' => $p['name'],
                 'email' => strtolower(str_replace(' ', '.', $p['name'])) . '@falcon.com',
                 'password' => bcrypt('password'),
-                'role' => 'facilitator'
+                'role' => 'facilitator',
+                'bankName' => $p['bank'],
+                'bankAccountNumber' => $p['acct'],
+                'phoneNumber' => '012-' . rand(1000000, 9999999),
+                'joinDate' => now()->subYear(),
             ]);
 
-            Facilitator::create([
-                'user_id' => $user->id,
-                'skills' => $p['skills'],
-                'bank_name' => $p['bank'],
-                'bank_account_number' => $p['acct'],
-                'phone_number' => '012-' . rand(1000000, 9999999),
-                'join_date' => now()->subYear(),
-            ]);
+            // Attach Skills
+            $skillsList = explode(' ', $p['skills']);
+            foreach ($skillsList as $skName) {
+                // Ensure skill exists
+                $skillModel = Skill::firstOrCreate(['skillName' => $skName]);
+                $user->skills()->attach($skillModel->skillID);
+            }
         }
 
         // ----------------------------------------------------------------
@@ -80,41 +83,46 @@ class RecommendationVerificationSeeder extends Seeder
         ];
 
         foreach ($events as $evt) {
-            $e = Event::create([
-                'event_name' => $evt['name'],
-                'event_category' => $evt['cat'],
-                'required_skill_tag' => $evt['skills'],
+            Event::create([
+                'eventName' => $evt['name'],
+                'eventCategory' => $evt['cat'],
+                // 'requiredSkillTag' => $evt['skills'], // Removed from schema, logic uses Rule or description/remark if needed.
+                // If logic strictly needs a per-event tag override, we might need to rely on 'remark' or re-add the column. 
+                // But migration removed it. So I'll put it in remark for now if needed, or omit.
+                'remark' => 'Requires: ' . $evt['skills'],
                 'status' => 'upcoming',
-                'start_date_time' => now()->addDays(rand(5,30)),
+                'startDateTime' => now()->addDays(rand(5,30)),
                 'quota' => 20
             ]);
         }
         
         // Create a Past Event with Pending Payment for Testing
         $pastEvent = Event::create([
-            'event_name' => 'Past Training',
-            'event_category' => 'TEAM BUILDING',
-            'required_skill_tag' => 'Leadership',
+            'eventName' => 'Past Training',
+            'eventCategory' => 'TEAM BUILDING',
+            'remark' => 'Leadership',
             'status' => 'completed',
-            'start_date_time' => now()->subDays(10),
-            'end_date_time' => now()->subDays(9),
+            'startDateTime' => now()->subDays(10),
+            'endDateTime' => now()->subDays(9),
             'quota' => 10
         ]);
         
-        $facil = Facilitator::first();
+        $facil = User::where('role', 'facilitator')->first();
         if ($facil) {
-            $att = Attendance::create([
-                'event_id' => $pastEvent->id,
-                'facilitator_id' => $facil->id,
-                'status' => 'present',
-                'clock_in_time' => now()->subDays(10),
-                'clock_out_time' => now()->subDays(10)->addHours(8),
+            // Create Assignment (which serves as attendance record)
+            $assign = Assignment::create([
+                'eventID' => $pastEvent->eventID,
+                'userID' => $facil->userID,
+                'status' => 'assigned',
+                'attendanceStatus' => 'present',
+                'clockInTime' => now()->subDays(10),
+                'clockOutTime' => now()->subDays(10)->addHours(8),
             ]);
             
             Payment::create([
-                'attendance_id' => $att->id,
+                'assignmentID' => $assign->assignmentID, // Linked to Assignment
                 'amount' => 200.00,
-                'payment_status' => 'pending',
+                'paymentStatus' => 'pending',
             ]);
         }
 

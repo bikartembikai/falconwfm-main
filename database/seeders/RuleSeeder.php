@@ -14,47 +14,47 @@ class RuleSeeder extends Seeder
     {
         $rules = [
             [
-                'event_category' => 'TEAM BUILDING',
-                'required_skills' => ['Speaking', 'Medic', 'Leadership', 'Facilitating'],
-                'min_experience' => 0,
-                'min_rating' => 0,
-                'intensity_level' => 'Normal'
+                'eventCategory' => 'TEAM BUILDING',
+                'requiredSkill' => ['Speaking', 'Medic', 'Leadership', 'Facilitating'],
+                'minExperience' => 0,
+                'minRating' => 0,
+
             ],
             [
-                'event_category' => 'TALK',
-                'required_skills' => ['Speaking', 'Leadership', 'Public Speaking', 'Facilitating'],
-                'min_experience' => 0,
-                'min_rating' => 0,
-                'intensity_level' => 'Normal'
+                'eventCategory' => 'TALK',
+                'requiredSkill' => ['Speaking', 'Leadership', 'Public Speaking', 'Facilitating'],
+                'minExperience' => 0,
+                'minRating' => 0,
+
             ],
             [
-                'event_category' => 'CAMP',
-                'required_skills' => ['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics'],
+                'eventCategory' => 'CAMP',
+                'requiredSkill' => ['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics'],
                 // Report Rule 6 & 7: High Risk => Min 2 Years
-                'min_experience' => 2, 
-                'min_rating' => 0,
-                'intensity_level' => 'High Risk'
+                'minExperience' => 2, 
+                'minRating' => 0,
+
             ],
             [
-                'event_category' => 'WORKSHOP',
-                'required_skills' => ['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics'],
-                'min_experience' => 0,
-                'min_rating' => 0,
-                'intensity_level' => 'Normal'
+                'eventCategory' => 'WORKSHOP',
+                'requiredSkill' => ['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics'],
+                'minExperience' => 0,
+                'minRating' => 0,
+
             ],
             [
-                'event_category' => 'HOLIDAY',
-                'required_skills' => ['Medic', 'Swimming', 'Logistic'],
+                'eventCategory' => 'HOLIDAY',
+                'requiredSkill' => ['Medic', 'Swimming', 'Logistic'],
                 // Report Rule 6 & 7: High Risk => Min 2 Years
-                'min_experience' => 2,
-                'min_rating' => 0,
-                'intensity_level' => 'High Risk'
+                'minExperience' => 2,
+                'minRating' => 0,
+
             ],
         ];
 
         foreach ($rules as $rule) {
             EventRule::updateOrCreate(
-                ['event_category' => $rule['event_category']],
+                ['eventCategory' => $rule['eventCategory']],
                 $rule
             );
         }

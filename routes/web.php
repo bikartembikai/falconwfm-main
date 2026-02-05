@@ -8,6 +8,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\EventRuleController;
 
 use App\Http\Controllers\AuthController;
 
@@ -26,6 +27,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['web'])->group(function () {
     // Events
     Route::resource('events', EventController::class);
+    Route::resource('event-rules', EventRuleController::class);
     // REMOVED 'apply' route as request by User to use Admin Assignment instead
     
     // Facilitator Dashboard & Profile
