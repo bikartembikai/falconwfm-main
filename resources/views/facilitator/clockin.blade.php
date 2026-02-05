@@ -20,7 +20,7 @@
 
         <!-- Reuse Mobile Menu from Dashboard (Ideally this is a layout component) -->
         <div id="mobile-menu" class="hidden md:hidden bg-green-600 text-white absolute top-16 left-0 right-0 z-30 shadow-lg border-t border-green-500">
-            <a href="{{ route('facilitator.dashboard') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Dashboard</a>
+            <a href="{{ route('dashboard') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Dashboard</a>
             <a href="{{ route('attendance.clockin_view') }}" class="block px-4 py-3 border-b border-green-500 bg-green-700">Clock In/Out</a>
             <a href="{{ route('assignments.index') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Assigned Events</a>
             <a href="#" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Leave Request</a>

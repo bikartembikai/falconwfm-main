@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Assignment;
-use App\Models\Facilitator;
 use App\Models\Event;
 
 class AssignmentController extends Controller
@@ -56,19 +55,19 @@ class AssignmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'event_id' => 'required|exists:events,id',
+            'event_id' => 'required|exists:events,eventID',
             'facilitator_ids' => 'required|array',
-            'facilitator_ids.*' => 'exists:facilitators,id',
+            'facilitator_ids.*' => 'exists:users,userID', // Facilitators are Users
         ]);
 
         $event = Event::find($request->event_id);
         $count = 0;
 
         foreach ($request->facilitator_ids as $facilId) {
-            $facilitator = Facilitator::find($facilId);
+            $facilitator = \App\Models\User::find($facilId);
 
             // Check if already assigned
-            if ($event->assignments()->where('user_id', $facilitator->user_id)->exists()) {
+            if ($event->assignments()->where('userID', $facilitator->userID)->exists()) {
                 continue; // Skip if already assigned
             }
 
@@ -78,15 +77,15 @@ class AssignmentController extends Controller
             }
 
             Assignment::create([
-                'event_id' => $event->id,
-                'user_id' => $facilitator->user_id,
+                'eventID' => $event->eventID,
+                'userID' => $facilitator->userID,
                 'role' => 'Facilitator', // Default role
                 'date_assigned' => now(),
             ]);
             $count++;
         }
 
-        return redirect()->route('events.show', $event->id)->with('success', "Successfully assigned $count facilitators.");
+        return redirect()->route('events.index')->with('success', "Successfully assigned $count facilitators.");
     }
 
     public function destroy($id)

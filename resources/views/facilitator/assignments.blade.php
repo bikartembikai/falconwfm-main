@@ -9,7 +9,7 @@
             <span>Facilitator <span class="text-xs block font-normal text-green-100">Portal</span></span>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <a href="{{ route('facilitator.dashboard') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-white">Dashboard</a>
+            <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-white">Dashboard</a>
             <a href="{{ route('attendance.clockin_view') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-green-500 rounded-lg transition text-green-50 hover:text-white">Clock In/Out</a>
             <a href="{{ route('assignments.index') }}" class="flex items-center gap-3 px-4 py-3 bg-green-800 rounded-lg shadow-inner text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -35,7 +35,7 @@
 
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-green-600 text-white absolute top-16 left-0 right-0 z-30 shadow-lg border-t border-green-500">
-            <a href="{{ route('facilitator.dashboard') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Dashboard</a>
+            <a href="{{ route('dashboard') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Dashboard</a>
             <a href="{{ route('attendance.clockin_view') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Clock In/Out</a>
             <a href="{{ route('assignments.index') }}" class="block px-4 py-3 border-b border-green-500 bg-green-700">Assigned Events</a>
             <a href="#" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Leave Request</a>

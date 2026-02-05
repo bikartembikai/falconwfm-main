@@ -31,7 +31,7 @@ Route::middleware(['web'])->group(function () {
     // REMOVED 'apply' route as request by User to use Admin Assignment instead
     
     // Facilitator Dashboard & Profile
-    Route::get('/dashboard', [FacilitatorController::class, 'dashboard'])->name('facilitator.dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile/edit', [FacilitatorController::class, 'edit'])->name('facilitator.edit');
     Route::post('/profile/update', [FacilitatorController::class, 'update'])->name('facilitator.update');
     Route::get('/facilitator/{id}', [FacilitatorController::class, 'show'])->name('facilitator.show');

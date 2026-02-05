@@ -18,7 +18,7 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-gray-500 bg-opacity-50 transition-opacity z-0" 
+                 class="fixed inset-0 bg-gray-500 bg-opacity-25 transition-opacity z-0" 
                  aria-hidden="true"
                  @click="showModal = false"></div>
 
@@ -36,7 +36,7 @@
                  @click.stop>
                 
                 <!-- Dynamic Content Loaded via AJAX -->
-                <div x-html="modalContent" class="p-0">
+                <div x-html="modalContent" class="p-0" @click="if($event.target.closest('.js-close-modal')) showModal = false">
                     <div class="p-12 text-center text-gray-500">
                         <svg class="animate-spin h-8 w-8 text-gray-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -182,6 +182,15 @@
                         @method('DELETE')
                         <button type="submit" class="w-full flex items-center justify-center px-4 py-2 border border-red-600 shadow-sm text-sm font-medium rounded-md text-red-600 bg-white hover:bg-red-50">Delete</button>
                     </form>
+                @elseif(Auth::user()->role === 'operation_manager')
+                     <div class="grid grid-cols-2 gap-3 w-full">
+                        <a href="{{ route('events.show', $event->eventID) }}" class="flex items-center justify-center px-4 py-2 border border-blue-600 shadow-sm text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50">
+                            View Details
+                        </a>
+                        <a href="{{ route('assignments.create', $event->eventID) }}" class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                            Assign Facilitators
+                        </a>
+                    </div>
                 @else
                     <a href="{{ route('events.show', $event->eventID) }}" class="flex items-center justify-center px-4 py-2 border border-blue-600 shadow-sm text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50">
                         View Details
