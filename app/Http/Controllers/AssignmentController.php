@@ -17,15 +17,15 @@ class AssignmentController extends Controller
         if (!$user) return redirect('/login');
 
         // fetch assignments (pending, accepted)
-        $assignments = Assignment::where('user_id', $user->id)
+        $assignments = Assignment::where('userID', $user->userID)
                                  ->with('event')
                                  ->whereIn('status', ['pending', 'accepted'])
-                                 ->orderBy('date_assigned', 'desc')
+                                 ->orderBy('dateAssigned', 'desc')
                                  ->get();
         
         // fetch history (completed, rejected)
         // Ideally linked via Attendance for "Completed" status or Assignment status
-        $history = Assignment::where('user_id', $user->id) 
+        $history = Assignment::where('userID', $user->userID) 
                              ->with('event')
                              ->whereIn('status', ['completed', 'rejected'])
                              ->orderBy('updated_at', 'desc')
@@ -80,7 +80,7 @@ class AssignmentController extends Controller
                 'eventID' => $event->eventID,
                 'userID' => $facilitator->userID,
                 'role' => 'Facilitator', // Default role
-                'date_assigned' => now(),
+                'dateAssigned' => now(),
             ]);
             $count++;
         }

@@ -51,11 +51,52 @@
 
     <!-- Header -->
     <div>
-        <h1 class="text-2xl font-bold text-slate-800">Event Management</h1>
-        <p class="text-slate-500">Create and manage events for your organization</p>
+        <h1 class="text-2xl font-bold text-slate-800">{{ Auth::user()->role === 'operation_manager' ? 'Assignments' : 'Event Management' }}</h1>
+        <p class="text-slate-500">{{ Auth::user()->role === 'operation_manager' ? 'Manage facilitator assignments' : 'Create and manage events for your organization' }}</p>
     </div>
 
-    <!-- Stats Row (Preserved) -->
+    @if(Auth::user()->role === 'operation_manager')
+    <!-- Operation Manager Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start">
+            <div>
+                <h3 class="text-sm font-medium text-slate-500 mb-4">Total Events</h3>
+                <div class="text-3xl font-bold text-slate-900">{{ $totalEventsCount }}</div>
+            </div>
+            <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start">
+            <div>
+                <h3 class="text-sm font-medium text-slate-500 mb-4">Pending Assignment</h3>
+                <div class="text-3xl font-bold text-orange-600">{{ $pendingAssignmentCount }}</div>
+            </div>
+            <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start">
+            <div>
+                <h3 class="text-sm font-medium text-slate-500 mb-4">Fully Assigned</h3>
+                <div class="text-3xl font-bold text-green-600">{{ $fullyAssignedCount }}</div>
+            </div>
+            <div class="p-2 bg-green-50 rounded-lg text-green-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start">
+            <div>
+                <h3 class="text-sm font-medium text-slate-500 mb-4">Pending Responses</h3>
+                <div class="text-3xl font-bold text-indigo-600">{{ $pendingResponseCount }}</div>
+            </div>
+            <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+        </div>
+    </div>
+    @else
+    <!-- Standard Stats Row -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start">
             <div>
@@ -98,6 +139,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Filters & Actions -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
@@ -125,9 +167,14 @@
                 <label class="text-xs font-semibold text-slate-500 block mb-1">Status</label>
                 <select name="status" onchange="this.form.submit()" class="block w-full rounded-md border-0 bg-slate-50 py-2 pl-3 ring-1 ring-inset ring-gray-300 sm:text-sm">
                     <option value="">All Status</option>
-                    <option value="Upcoming" {{ request('status') == 'Upcoming' ? 'selected' : '' }}>Upcoming</option>
-                    <option value="Ongoing" {{ request('status') == 'Ongoing' ? 'selected' : '' }}>Ongoing</option>
-                    <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                    @if(Auth::user()->role === 'operation_manager')
+                        <option value="Pending Assignment" {{ request('status') == 'Pending Assignment' ? 'selected' : '' }}>Pending Assignment</option>
+                        <option value="Fully Assigned" {{ request('status') == 'Fully Assigned' ? 'selected' : '' }}>Fully Assigned</option>
+                    @else
+                        <option value="Upcoming" {{ request('status') == 'Upcoming' ? 'selected' : '' }}>Upcoming</option>
+                        <option value="Ongoing" {{ request('status') == 'Ongoing' ? 'selected' : '' }}>Ongoing</option>
+                        <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                    @endif
                 </select>
             </div>
             @if(Auth::user()->role === 'marketing_manager')

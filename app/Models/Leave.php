@@ -6,21 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Leave extends Model
 {
+    protected $primaryKey = 'leaveID';
+
     protected $fillable = [
-        'user_id',
-        'start_date',
-        'end_date',
+        'userID',
+        'startDate',
+        'endDate',
         'status',
         'reason'
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'startDate' => 'date',
+        'endDate' => 'date',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'userID', 'userID');
     }
 }

@@ -7,19 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     protected $fillable = [
-        'attendance_id',
+        'assignmentID',
+        'title',
         'amount',
-        'payment_status',
-        'payment_proof',
-        'payment_date'
+        'description',
+        'paymentStatus',
+        'paymentProof',
+        'paymentDate'
     ];
 
     protected $casts = [
-        'payment_date' => 'date',
+        'paymentDate' => 'date',
     ];
 
-    public function attendance()
+    public function assignment()
     {
-        return $this->belongsTo(Attendance::class);
+        return $this->belongsTo(Assignment::class, 'assignmentID', 'assignmentID');
     }
 }

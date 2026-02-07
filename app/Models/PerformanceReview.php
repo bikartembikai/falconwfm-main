@@ -8,18 +8,30 @@ class PerformanceReview extends Model
 {
     protected $fillable = [
         'facilitator_id',
+        'reviewer_id',
+        'event_id',
         'rating',
         'feedback_comments',
         'role',
-        'date_submitted'
+        'dateSubmitted'
     ];
 
     protected $casts = [
-        'date_submitted' => 'date',
+        'dateSubmitted' => 'date',
     ];
 
-    public function facilitator()
+    public function user()
     {
-        return $this->belongsTo(Facilitator::class);
+        return $this->belongsTo(User::class, 'facilitator_id', 'userID'); // The Reviewee
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewer_id', 'userID'); // The Reviewer
+    }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class, 'event_id', 'eventID');
     }
 }

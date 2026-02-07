@@ -1,81 +1,61 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 
 @section('content')
 <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar via Component or Copy/Paste for now to ensure isolation -->
-    @include('components.facilitator_sidebar') <!-- Assuming we extract sidebar later, or duplicate for now -->
-
+    
     <!-- Main Content -->
-    <div class="flex-1 md:ml-64 flex flex-col h-screen overflow-y-auto w-full">
-        <!-- Mobile Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-20 md:hidden flex justify-between items-center p-4">
-            <div class="flex items-center gap-2">
-                <div class="bg-green-600 text-white p-1 rounded font-mono text-sm">FM</div>
-                <span class="font-bold text-gray-800">Clock In/Out</span>
-            </div>
-            <button id="mobile-menu-btn" class="text-gray-600 focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </header>
-
-        <!-- Reuse Mobile Menu from Dashboard (Ideally this is a layout component) -->
-        <div id="mobile-menu" class="hidden md:hidden bg-green-600 text-white absolute top-16 left-0 right-0 z-30 shadow-lg border-t border-green-500">
-            <a href="{{ route('dashboard') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Dashboard</a>
-            <a href="{{ route('attendance.clockin_view') }}" class="block px-4 py-3 border-b border-green-500 bg-green-700">Clock In/Out</a>
-            <a href="{{ route('assignments.index') }}" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Assigned Events</a>
-            <a href="#" class="block px-4 py-3 border-b border-green-500 hover:bg-green-700">Leave Request</a>
-            <a href="#" class="block px-4 py-3 hover:bg-green-700">Allowance Request</a>
-        </div>
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto w-full">
+        <!-- Mobile Header (Hidden if using dashboard layout which likely handles header) -->
 
         <main class="p-4 md:p-8 bg-gray-50 flex-1">
             <div class="max-w-4xl mx-auto">
                 <h1 class="text-2xl font-bold text-gray-800 mb-6">Record Attendance</h1>
 
                 <!-- Active Event Card -->
-                @if($activeEvent)
+                @if($activeAssignment)
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                     <div class="p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-4">Active Event</h2>
                         
                         <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div>
-                                <h3 class="text-xl font-bold text-green-700">{{ $activeEvent->event_name }}</h3>
+                                <h3 class="text-xl font-bold text-green-700">{{ $activeAssignment->event->eventName }}</h3>
                                 <div class="mt-2 space-y-1 text-sm text-gray-600">
                                     <div class="flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                        <span>{{ \Carbon\Carbon::parse($activeEvent->start_date_time)->format('D, d M Y') }}</span>
+                                        <span>{{ $activeAssignment->event->startDateTime->format('D, d M Y') }}</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        <span>{{ \Carbon\Carbon::parse($activeEvent->start_date_time)->format('H:i') }} - {{ $activeEvent->end_date_time ? \Carbon\Carbon::parse($activeEvent->end_date_time)->format('H:i') : 'TBD' }}</span>
+                                        <span>{{ $activeAssignment->event->startDateTime->format('H:i') }} - {{ $activeAssignment->event->endDateTime ? $activeAssignment->event->endDateTime->format('H:i') : 'TBD' }}</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                        <span>{{ $activeEvent->venue }}</span>
+                                        <span>{{ $activeAssignment->event->venue }}</span>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Action Area -->
                             <div class="w-full md:w-auto bg-gray-50 rounded-lg p-4 flex flex-col items-center justify-center min-w-[250px]">
-                                @if($currentAttendance && $currentAttendance->clock_in_time && !$currentAttendance->clock_out_time)
+                                @if($activeAssignment->clockInTime && !$activeAssignment->clockOutTime)
                                     <!-- Clocked In State -->
                                     <div class="text-center w-full">
                                         <div class="mb-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium inline-flex items-center gap-2">
                                             <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                            Clocked In at {{ \Carbon\Carbon::parse($currentAttendance->clock_in_time)->format('H:i') }}
+                                            Clocked In at {{ \Carbon\Carbon::parse($activeAssignment->clockInTime)->format('H:i') }}
                                         </div>
                                         <button onclick="openModal('out')" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow transition transform active:scale-95 flex items-center justify-center gap-2">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                             Clock Out
                                         </button>
                                     </div>
-                                @elseif($currentAttendance && $currentAttendance->clock_out_time)
+                                @elseif($activeAssignment->clockOutTime)
                                     <div class="text-center w-full">
                                         <div class="mb-3 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                                             Completed
                                         </div>
-                                        <p class="text-sm text-gray-500">Shift ended at {{ \Carbon\Carbon::parse($currentAttendance->clock_out_time)->format('H:i') }}</p>
+                                        <p class="text-sm text-gray-500">Shift ended at {{ \Carbon\Carbon::parse($activeAssignment->clockOutTime)->format('H:i') }}</p>
                                     </div>
                                 @else
                                     <!-- Ready to Clock In -->
@@ -127,23 +107,23 @@
                                 @forelse($history as $record)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $record->event->event_name }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $record->event->eventName }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ \Carbon\Carbon::parse($record->created_at)->format('Y-m-d') }}
+                                        {{ $record->event->startDateTime->format('Y-m-d') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $record->clock_in_time ? \Carbon\Carbon::parse($record->clock_in_time)->format('H:i') : '-' }}
+                                        {{ $record->clockInTime ? \Carbon\Carbon::parse($record->clockInTime)->format('H:i') : '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $record->clock_out_time ? \Carbon\Carbon::parse($record->clock_out_time)->format('H:i') : '-' }}
+                                        {{ $record->clockOutTime ? \Carbon\Carbon::parse($record->clockOutTime)->format('H:i') : '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-bold">
                                         {{ $record->hours_worked ?? '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $record->status == 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ ucfirst($record->status) }}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $record->attendanceStatus == 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
+                                            {{ ucfirst($record->attendanceStatus) }}
                                         </span>
                                     </td>
                                 </tr>
@@ -179,7 +159,7 @@
                         <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Confirm Clock In</h3>
                         <div class="mt-2">
                             <p class="text-sm text-gray-500">
-                                You are about to clock in for <span class="font-bold text-gray-800">{{ $activeEvent ? $activeEvent->event_name : '' }}</span>.
+                                You are about to clock in for <span class="font-bold text-gray-800">{{ $activeAssignment ? $activeAssignment->event->eventName : '' }}</span>.
                                 <br>Current Time: <span class="font-mono text-gray-700">{{ now()->format('H:i') }}</span>
                             </p>
                         </div>
@@ -189,9 +169,10 @@
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <form action="{{ route('attendance.clockIn') }}" method="POST">
                     @csrf
-                    @if($activeEvent)
-                    <input type="hidden" name="event_id" value="{{ $activeEvent->id }}">
+                    @if($activeAssignment)
+                    <input type="hidden" name="event_id" value="{{ $activeAssignment->event->eventID }}">
                     @endif
+                    <!-- Add Image Proof if required by controller or make optional -->
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
                         Confirm Clock In
                     </button>
@@ -228,8 +209,8 @@
                 </div>
             </div>
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                @if($currentAttendance)
-                <form action="{{ route('attendance.clockOut', $currentAttendance->id) }}" method="POST">
+                @if($activeAssignment)
+                <form action="{{ route('attendance.clockOut', $activeAssignment->assignmentID) }}" method="POST">
                     @csrf
                     @method('PUT')
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">

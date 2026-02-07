@@ -1,54 +1,60 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\EventController;
-use App\Http\Controllers\FacilitatorController;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\AssignmentController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\RecommendationController;
-use App\Http\Controllers\EventRuleController;
-
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilitatorController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ReviewController;
 
 Route::get('/', function () {
-    return redirect()->route('login');
+    return view('welcome');
 });
 
-// Auth Routes
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+// Authentication Routes
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Auth Routes (Placeholder if using Breeze/Jetstream, otherwise simple)
-Route::middleware(['web'])->group(function () {
-    // Events
+// Dashboard Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Events Management for Managers
     Route::resource('events', EventController::class);
-    Route::resource('event-rules', EventRuleController::class);
-    // REMOVED 'apply' route as request by User to use Admin Assignment instead
+
+    // Facilitator Specific Routes
+    Route::get('/facilitator/dashboard', [FacilitatorController::class, 'dashboard'])->name('facilitator.dashboard');
+    Route::get('/facilitator/reviews', [FacilitatorController::class, 'reviews'])->name('facilitator.reviews');
+    Route::get('/facilitator/history', [FacilitatorController::class, 'history'])->name('facilitator.history');
     
-    // Facilitator Dashboard & Profile
-    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/profile/edit', [FacilitatorController::class, 'edit'])->name('facilitator.edit');
-    Route::post('/profile/update', [FacilitatorController::class, 'update'])->name('facilitator.update');
-    Route::get('/facilitator/{id}', [FacilitatorController::class, 'show'])->name('facilitator.show');
+    // Profile Management
+    Route::get('/profile', [FacilitatorController::class, 'profile'])->name('facilitator.profile');
+    Route::get('/profile/edit', [FacilitatorController::class, 'editProfile'])->name('facilitator.editProfile');
+    Route::put('/profile', [FacilitatorController::class, 'updateProfile'])->name('facilitator.updateProfile');
 
     // Attendance
     Route::get('/attendance/record', [AttendanceController::class, 'clockin_view'])->name('attendance.clockin_view');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'store'])->name('attendance.clockIn');
     Route::put('/attendance/{id}/clock-out', [AttendanceController::class, 'update'])->name('attendance.clockOut');
 
+    // Allowances & Leaves
+    Route::resource('allowances', App\Http\Controllers\AllowanceController::class);
+    Route::resource('leaves', App\Http\Controllers\LeaveController::class);
+
     // Assignments
     Route::get('/events/{event}/assign', [AssignmentController::class, 'create'])->name('assignments.create');
     Route::resource('assignments', AssignmentController::class)->only(['index', 'store', 'destroy']);
+    Route::post('/assignments/{assignment}/accept', [AssignmentController::class, 'accept'])->name('assignments.accept');
+    Route::post('/assignments/{assignment}/decline', [AssignmentController::class, 'decline'])->name('assignments.decline');
 
     // Reviews
     Route::post('/facilitator/{id}/review', [ReviewController::class, 'store'])->name('reviews.store');
-
-    // Admin
-    Route::get('/admin/payments', [PaymentController::class, 'index'])->name('admin.payments');
-    Route::put('/admin/payments/{id}', [PaymentController::class, 'update'])->name('payments.update');
+    
+    // Public Profile (for managers to see facilitator details)
+    Route::get('/facilitator/{id}', [FacilitatorController::class, 'show'])->name('facilitator.show');
 });

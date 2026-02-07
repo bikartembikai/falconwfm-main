@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Leave;
+use Illuminate\Support\Facades\Auth;
+
+class LeaveController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::user();
+        $leaves = Leave::where('userID', $user->userID)->orderBy('created_at', 'desc')->get();
+        return view('facilitator.leaves', compact('leaves'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date', // Keeping request key as snake_case for HTML standard, or change view? View uses name="start_date".
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'required|string',
+        ]);
+
+        Leave::create([
+            'userID' => Auth::user()->userID,
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+            'reason' => $request->reason,
+            'status' => 'pending',
+        ]);
+
+        return back()->with('success', 'Leave request submitted.');
+    }
+}

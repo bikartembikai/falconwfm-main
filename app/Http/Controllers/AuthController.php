@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use App\Models\Facilitator;
 
 class AuthController extends Controller
 {
@@ -27,13 +26,14 @@ class AuthController extends Controller
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = Auth::user();
-            
-            // Optional: Strict Role Check
-            // Map UI roles to DB roles if names differ. 
-            // DB: 'facilitator', 'admin' (or 'operation_manager'?)
-            // Let's assume input value is matches DB or we map it.
-            // If they login as Facilitator but are Admin, maybe allow? 
-            // Design implies strictness.
+
+            // Strict Role Validation: Check if selected role matches user's actual role
+            if ($user->role !== $request->role) {
+                Auth::logout();
+                return back()->withErrors([
+                    'role' => 'Access denied. You are registered as a ' . ucfirst(str_replace('_', ' ', $user->role)) . ', not a ' . ucfirst(str_replace('_', ' ', $request->role)) . '.',
+                ])->withInput();
+            }
             
             // Simple redirect based on actual role
             $request->session()->regenerate();
@@ -76,18 +76,12 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'facilitator', // Design says "Register as Facilitator"
-        ]);
-
-        // Create associated Facilitator profile
-        Facilitator::create([
-            'user_id' => $user->id,
-            'join_date' => now(),
-            // Other fields nullable
+            'joinDate' => now(),
         ]);
 
         Auth::login($user);
 
-        return redirect()->route('events.index');
+        return redirect()->route('login');
     }
 
     // Handle Logout

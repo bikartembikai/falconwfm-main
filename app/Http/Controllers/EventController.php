@@ -21,15 +21,28 @@ class EventController extends Controller
             return redirect('/login');
         }
 
+        // Automatic Status Updates based on Time (Run before any queries)
+        $now = now();
+        
+        // Mark as Ongoing if started and not ended
+        Event::where('startDateTime', '<=', $now)
+             ->where('endDateTime', '>=', $now)
+             ->where('status', '!=', 'ongoing')
+             ->update(['status' => 'ongoing']);
+             
+        // Mark as Completed if ended
+        Event::where('endDateTime', '<', $now)
+             ->where('status', '!=', 'completed')
+             ->update(['status' => 'completed']);
+             
+        // Mark as Upcoming if in future
+        Event::where('startDateTime', '>', $now)
+             ->where('status', '!=', 'upcoming')
+             ->update(['status' => 'upcoming']);
+
         // 1. Facilitator View
         if ($user->role === 'facilitator') {
-            $events = Event::where('status', 'upcoming')
-                        ->with('assignments')
-                        ->orderBy('startDateTime', 'asc')
-                        ->get();
-            $totalEvents = $events->count();
-            
-            return view('dashboard.facilitator', compact('user', 'events', 'totalEvents'));
+            return redirect()->route('dashboard');
         }
 
         // 2. Manager View
@@ -52,30 +65,20 @@ class EventController extends Controller
 
         // Status Filter
         if ($request->has('status') && $request->status != 'All Status' && $request->status != '') {
-            $query->where('status', strtolower($request->status));
+            if ($request->status === 'Pending Assignment') {
+                // Events where accepted assignments < quota
+                $query->whereRaw('(SELECT COUNT(*) FROM assignments WHERE assignments.eventID = events.eventID AND assignments.status = "accepted") < quota');
+            } elseif ($request->status === 'Fully Assigned') {
+                 // Events where accepted assignments >= quota
+                 $query->whereRaw('(SELECT COUNT(*) FROM assignments WHERE assignments.eventID = events.eventID AND assignments.status = "accepted") >= quota');
+            } else {
+                $query->where('status', strtolower($request->status));
+            }
         }
 
         $events = $query->orderBy('startDateTime', 'asc')->get();
         $categories = EventRule::pluck('eventCategory');
 
-        // Automatic Status Updates based on Time
-        $now = now();
-        
-        // Mark as Ongoing if started and not ended
-        Event::where('startDateTime', '<=', $now)
-             ->where('endDateTime', '>=', $now)
-             ->where('status', '!=', 'ongoing')
-             ->update(['status' => 'ongoing']);
-
-        // Mark as Completed if ended
-        Event::where('endDateTime', '<', $now)
-             ->where('status', '!=', 'completed')
-             ->update(['status' => 'completed']);
-             
-        // Mark as Upcoming if in future (just in case dates changed)
-        Event::where('startDateTime', '>', $now)
-             ->where('status', '!=', 'upcoming')
-             ->update(['status' => 'upcoming']);
 
         // Stats Calculation
         $totalEventsCount = Event::count();
@@ -83,8 +86,20 @@ class EventController extends Controller
         $ongoingCount = Event::where('status', 'ongoing')->count();
         $completedCount = Event::where('status', 'completed')->count();
 
+        // Operation Manager Stats (Assignment Status)
+        $eventsPermStats = Event::withCount(['assignments' => function ($query) {
+            $query->where('status', 'accepted');
+        }])->get(['eventID', 'quota']); // Assuming primary key is eventID based on previous code usage
+        
+        $fullyAssignedCount = $eventsPermStats->filter(function ($event) {
+            return $event->assignments_count >= $event->quota;
+        })->count();
+        
+        $pendingAssignmentCount = $eventsPermStats->count() - $fullyAssignedCount;
+        
+        $pendingResponseCount = Assignment::where('status', 'assigned')->count();
 
-        return view('events.index', compact('events', 'categories', 'totalEventsCount', 'scheduledCount', 'ongoingCount', 'completedCount'));
+        return view('events.index', compact('events', 'categories', 'totalEventsCount', 'scheduledCount', 'ongoingCount', 'completedCount', 'fullyAssignedCount', 'pendingAssignmentCount', 'pendingResponseCount'));
     }
 
     // Show single event details with Recommendations
@@ -104,7 +119,12 @@ class EventController extends Controller
             return view('events.show_marketing', compact('event', 'rule'));
         }
         
-        // 2. Standard View (Admin/Ops) - With Recommendations
+        // 2. Operation Manager View (Detail Focused)
+        if ($user->role === 'operation_manager') {
+             return view('events.show_operation', compact('event'));
+        }
+
+        // 3. Standard View (Admin) - With Recommendations
         // Fetch Rule-Based Recommendations
         $recommender = new RecommendationService();
         $recommendations = $recommender->recommend($event);
