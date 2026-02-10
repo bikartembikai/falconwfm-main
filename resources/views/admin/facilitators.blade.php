@@ -118,7 +118,7 @@
                 </div>
                 <div class="flex items-center gap-2 text-sm text-gray-600">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    {{ $facilitator->yearsOfExperience ?? 0 }} years experience
+                    {{ $facilitator->experience ?? 'Not specified' }}
                 </div>
                 <div class="flex items-center gap-2 text-sm text-gray-600">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
@@ -161,8 +161,8 @@
                         "name" => $facilitator->name,
                         "email" => $facilitator->email,
                         "expertise" => $facilitator->expertise ?? "Not specified",
-                        "experience" => $facilitator->yearsOfExperience ?? 0,
-                        "phone" => $facilitator->phone ?? "",
+                        "experience" => $facilitator->experience ?? "Not specified",
+                        "phone" => $facilitator->phoneNumber ? (Str::startsWith($facilitator->phoneNumber, '+60') ? $facilitator->phoneNumber : '+60 ' . $facilitator->phoneNumber) : "N/A",
                         "skills" => $skillsString,
                         "status" => $facilitator->dynamicStatus,
                         "rating" => number_format($facilitator->averageRating ?? 0, 1),
@@ -174,7 +174,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     View
                 </button>
-                <button onclick="openEditModal({{ $facilitator->userID }}, '{{ addslashes($facilitator->name) }}', '{{ $facilitator->email }}', {{ $facilitator->yearsOfExperience ?? 0 }}, '{{ $facilitator->phone ?? '' }}', '{{ addslashes($skillsString) }}', '{{ $facilitator->dynamicStatus }}')" class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-green-500 text-green-600 rounded-lg text-sm hover:bg-green-50">
+                <button onclick="openEditModal({{ $facilitator->userID }}, '{{ addslashes($facilitator->name) }}', '{{ $facilitator->email }}', '{{ addslashes($facilitator->experience ?? "") }}', '{{ $facilitator->phoneNumber ? (Str::startsWith($facilitator->phoneNumber, '+60') ? $facilitator->phoneNumber : '+60 ' . $facilitator->phoneNumber) : "" }}', '{{ addslashes($skillsString) }}', '{{ $facilitator->dynamicStatus }}')" class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-green-500 text-green-600 rounded-lg text-sm hover:bg-green-50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     Edit
                 </button>
@@ -562,7 +562,7 @@ function openViewModal(btn) {
     document.getElementById('viewName').textContent = name || 'N/A';
     document.getElementById('viewEmail').textContent = email || 'N/A';
 
-    document.getElementById('viewExperience').textContent = experience;
+    document.getElementById('viewExperience').textContent = experience || 'Not specified';
     document.getElementById('viewPhone').textContent = phone || 'N/A';
     document.getElementById('viewEvents').textContent = events;
     document.getElementById('viewRating').textContent = rating + ' / 5.0';
@@ -660,8 +660,8 @@ function openEditModal(id, name, email, experience, phone, skills, status) {
     document.getElementById('editForm').action = '/admin/facilitators/' + id;
     document.getElementById('editName').value = name;
     document.getElementById('editEmail').value = email;
-    document.getElementById('editExperience').value = experience;
-    document.getElementById('editPhone').value = phone;
+    document.getElementById('editExperience').value = experience || '';
+    document.getElementById('editPhone').value = phone || '';
     document.getElementById('editStatus').value = status;
     
     // Lock availability if busy

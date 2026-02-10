@@ -86,7 +86,7 @@ class AdminFacilitatorController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'yearsOfExperience' => 'nullable|integer|min:0',
+            'experience' => 'nullable|string',
             'phone' => 'nullable|string',
             'skills' => 'nullable|string',
         ]);
@@ -96,7 +96,7 @@ class AdminFacilitatorController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'facilitator',
-            'experience' => $request->yearsOfExperience ? $request->yearsOfExperience . ' years' : null,
+            'experience' => $request->experience,
             'phoneNumber' => $request->phone,
             'joinDate' => now(),
         ]);
@@ -134,7 +134,7 @@ class AdminFacilitatorController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id . ',userID',
-            'yearsOfExperience' => 'nullable|integer|min:0',
+            'experience' => 'nullable|string',
             'phone' => 'nullable|string',
             'skills' => 'nullable|string',
         ]);
@@ -142,7 +142,7 @@ class AdminFacilitatorController extends Controller
         $facilitator->update([
             'name' => $request->name,
             'email' => $request->email,
-            'experience' => $request->yearsOfExperience ? $request->yearsOfExperience . ' years' : null,
+            'experience' => $request->experience,
             'phoneNumber' => $request->phone,
         ]);
 
