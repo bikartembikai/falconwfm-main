@@ -14,45 +14,40 @@ class EventRuleSeeder extends Seeder
     {
         $rules = [
             [
-                'event_category' => 'TEAM BUILDING',
-                'required_skills' => ['Speaking', 'Medic', 'Leadership', 'Facilitating'],
-                'required_specialization' => 'Corporate Training',
-                'min_experience' => 2,
-                'min_rating' => 4,
+                'eventCategory' => 'TEAM BUILDING',
+                'requiredSkill' => json_encode(['Speaking', 'Medic', 'Leadership', 'Facilitating']),
+                'minExperience' => 2,
+                'minRating' => 4,
             ],
             [
-                'event_category' => 'TALK',
-                'required_skills' => ['Speaking', 'Leadership', 'Public Speaking', 'Facilitating'],
-                'required_specialization' => 'Motivation',
-                'min_experience' => 3,
-                'min_rating' => 4,
+                'eventCategory' => 'TALK',
+                'requiredSkill' => json_encode(['Speaking', 'Leadership', 'Public Speaking', 'Facilitating']),
+                'minExperience' => 3,
+                'minRating' => 4,
             ],
             [
-                'event_category' => 'CAMP',
-                'required_skills' => ['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics'],
-                'required_specialization' => 'Outdoor Activities',
-                'min_experience' => 1,
-                'min_rating' => 3,
+                'eventCategory' => 'CAMP',
+                'requiredSkill' => json_encode(['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics']),
+                'minExperience' => 1,
+                'minRating' => 3,
             ],
             [
-                'event_category' => 'WORKSHOP',
-                'required_skills' => ['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics'],
-                'required_specialization' => 'Education',
-                'min_experience' => 2,
-                'min_rating' => 3,
+                'eventCategory' => 'WORKSHOP',
+                'requiredSkill' => json_encode(['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics']),
+                'minExperience' => 2,
+                'minRating' => 3,
             ],
             [
-                'event_category' => 'HOLIDAY',
-                'required_skills' => ['Medic', 'Swimming', 'Logistic'],
-                'required_specialization' => 'Recreation',
-                'min_experience' => 0,
-                'min_rating' => 0,
+                'eventCategory' => 'HOLIDAY',
+                'requiredSkill' => json_encode(['Medic', 'Swimming', 'Logistics']),
+                'minExperience' => 0,
+                'minRating' => 0,
             ],
         ];
 
         foreach ($rules as $rule) {
             EventRule::updateOrCreate(
-                ['event_category' => $rule['event_category']],
+                ['eventCategory' => $rule['eventCategory']],
                 $rule
             );
         }

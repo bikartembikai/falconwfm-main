@@ -160,7 +160,6 @@
                         "id" => $facilitator->userID,
                         "name" => $facilitator->name,
                         "email" => $facilitator->email,
-                        "expertise" => $facilitator->expertise ?? "Not specified",
                         "experience" => $facilitator->yearsOfExperience ?? 0,
                         "phone" => $facilitator->phone ?? "",
                         "skills" => $skillsString,
@@ -220,19 +219,14 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Expertise/Specialization</p>
-                        <p class="font-semibold text-gray-800" id="viewExpertise"></p>
-                    </div>
-                    <div>
                         <p class="text-xs text-gray-500 mb-1">Experience</p>
                         <p class="font-semibold text-gray-800" id="viewExperience"></p>
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Phone Number</p>
                         <p class="font-semibold text-gray-800" id="viewPhone"></p>
                     </div>
+                </div>
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Events Assigned</p>
                         <p class="font-semibold text-gray-800" id="viewEvents"></p>
@@ -252,6 +246,14 @@
                 <div>
                     <p class="text-xs text-gray-500 mb-1">Average Rating</p>
                     <p class="font-semibold text-gray-800" id="viewRating"></p>
+                </div>
+
+                <!-- Review Insights -->
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-xs text-gray-500 mb-2">Review Insights</p>
+                    <div id="reviewInsights" class="flex flex-wrap gap-2">
+                        <span class="text-gray-400 text-xs">No insights yet</span>
+                    </div>
                 </div>
 
                 <!-- Feedback Section -->
@@ -561,16 +563,15 @@ function openViewModal(btn) {
         const data = JSON.parse(dataAttr);
         console.log('Parsed data:', data);
         
-        // Destructure data for easier use (mapping to old param names)
+        // Destructure data for easier use
         const { 
-            id, name, email, expertise, experience, phone, skills, 
+            id, name, email, experience, phone, skills, 
             status, rating, events, statusReason, reviews: feedbackArr 
         } = data;
         
         document.getElementById('viewFacilitatorId').value = id; // Set hidden input for feedback
     document.getElementById('viewName').textContent = name || 'N/A';
     document.getElementById('viewEmail').textContent = email || 'N/A';
-    document.getElementById('viewExpertise').textContent = expertise || 'Not specified';
     document.getElementById('viewExperience').textContent = experience + ' years';
     document.getElementById('viewPhone').textContent = phone || 'N/A';
     document.getElementById('viewEvents').textContent = events;
@@ -601,6 +602,53 @@ function openViewModal(btn) {
     
     // Status reason
     document.getElementById('viewStatusReason').textContent = statusReason || '';
+    
+    // Review Insights - Sentiment Analysis
+    const insightsContainer = document.getElementById('reviewInsights');
+    insightsContainer.innerHTML = '';
+    
+    if (feedbackArr && feedbackArr.length > 0) {
+        const keywords = {
+            positive: ['good', 'great', 'excellent', 'knowledge', 'professional', 'leadership', 
+                      'helpful', 'organized', 'patient', 'motivat', 'inspir', 'religious',
+                      'punctual', 'prepared', 'engaging', 'communicat'],
+            negative: ['lazy', 'late', 'unprepared', 'unprofessional', 'disorganized', 'missing',
+                      'improvement', 'could be', 'needs', 'sometimes', 'arrive']
+        };
+        
+        const found = { positive: new Set(), negative: new Set() };
+        
+        // Extract keywords from all comments
+        feedbackArr.forEach(fb => {
+            const comment = fb.comment.toLowerCase();
+            keywords.positive.forEach(kw => {
+                if (comment.includes(kw)) found.positive.add(kw);
+            });
+            keywords.negative.forEach(kw => {
+                if (comment.includes(kw)) found.negative.add(kw);
+            });
+        });
+        
+        // Display badges
+        if (found.positive.size > 0 || found.negative.size > 0) {
+            found.positive.forEach(keyword => {
+                const badge = document.createElement('span');
+                badge.className = 'px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full';
+                badge.textContent = keyword;
+                insightsContainer.appendChild(badge);
+            });
+            found.negative.forEach(keyword => {
+                const badge = document.createElement('span');
+                badge.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full';
+                badge.textContent = keyword;
+                insightsContainer.appendChild(badge);
+            });
+        } else {
+            insightsContainer.innerHTML = '<span class="text-gray-400 text-xs">No specific keywords found</span>';
+        }
+    } else {
+        insightsContainer.innerHTML = '<span class="text-gray-400 text-xs">No insights yet</span>';
+    }
     
     // Feedback section
     const feedbackContainer = document.getElementById('viewFeedback');
