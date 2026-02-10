@@ -88,13 +88,13 @@ class FacilitatorController extends Controller
             ->get();
             
         // 3. Get reviews I have already written
-        // We need to match by (event_id, facilitator_id)
+        // We need to match by (event_id, userID)
         $myReviews = \App\Models\PerformanceReview::where('reviewer_id', $user->userID)->get();
         
         // Map for quick lookup: "eventID_userID"
         $myReviewsMap = [];
         foreach($myReviews as $review) {
-            $myReviewsMap[$review->event_id . '_' . $review->facilitator_id] = $review;
+            $myReviewsMap[$review->event_id . '_' . $review->userID] = $review;
         }
         
         $pendingReviews = [];
@@ -173,7 +173,8 @@ class FacilitatorController extends Controller
         if ($user->role !== 'facilitator') abort(403);
         
         $user->load('skills');
-        return view('facilitator.profile-edit', compact('user'));
+        $allSkills = \App\Models\Skill::orderBy('skillName')->pluck('skillName');
+        return view('facilitator.profile-edit', compact('user', 'allSkills'));
     }
 
     // Handle Profile Update

@@ -8,6 +8,11 @@ class Assignment extends Model
 {
     protected $primaryKey = 'assignmentID';
 
+    public function getRouteKeyName()
+    {
+        return 'assignmentID';
+    }
+
     protected $fillable = [
         'eventID',
         'userID',

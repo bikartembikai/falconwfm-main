@@ -77,10 +77,141 @@
                     
                     <div class="space-y-6">
                         <div>
-                            <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Skills (Separate with commas)</label>
-                            <input type="text" name="skills" value="{{ old('skills', $user->skills->pluck('skillName')->implode(', ')) }}" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1a8a5f] focus:border-transparent" placeholder="e.g. Event Management, Public Speaking, Team Coordination">
-                            <p class="text-xs text-slate-400 mt-1">Add relevant skills required for event facilitation</p>
+                            <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Skills</label>
+                            
+                            <!-- Custom Skill Selector -->
+                            <div class="skill-selector w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm focus-within:ring-2 focus-within:ring-[#1a8a5f] focus-within:border-transparent flex flex-wrap gap-2 items-center relative">
+                                <!-- Selected Skills (Chips) -->
+                                <div id="selectedSelectsContainer" class="flex flex-wrap gap-2">
+                                    @foreach($user->skills as $skill)
+                                        <div class="bg-emerald-100 text-emerald-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
+                                            {{ $skill->skillName }}
+                                            <button type="button" class="ml-1.5 text-emerald-600 hover:text-emerald-900 focus:outline-none" onclick="removeSkill(this, '{{ $skill->skillName }}')">
+                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                <!-- Input Field -->
+                                <input type="text" id="skillInput" class="bg-transparent border-none focus:ring-0 p-0 text-sm flex-1 min-w-[120px]" placeholder="Add a skill..." autocomplete="off">
+                                
+                                <!-- Suggestions Dropdown -->
+                                <ul id="skillSuggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto z-50 hidden">
+                                    <!-- Suggestions will be populated here -->
+                                </ul>
+                            </div>
+                            
+                            <!-- Hidden Input for Form Submission -->
+                            <input type="hidden" name="skills" id="hiddenSkillsInput" value="{{ $user->skills->pluck('skillName')->implode(',') }}">
+
+                            <p class="text-xs text-slate-400 mt-1">Type to search or add new skills. Press Enter to add.</p>
                         </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const allSkills = @json($allSkills ?? []);
+                                const skillInput = document.getElementById('skillInput');
+                                const suggestionsList = document.getElementById('skillSuggestions');
+                                const selectedContainer = document.getElementById('selectedSelectsContainer');
+                                const hiddenInput = document.getElementById('hiddenSkillsInput');
+                                
+                                let currentSkills = hiddenInput.value ? hiddenInput.value.split(',').map(s => s.trim()).filter(s => s) : [];
+
+                                function updateHiddenInput() {
+                                    hiddenInput.value = currentSkills.join(',');
+                                }
+
+                                function addSkill(skillName) {
+                                    skillName = skillName.trim();
+                                    if (!skillName || currentSkills.includes(skillName)) return;
+
+                                    currentSkills.push(skillName);
+                                    updateHiddenInput();
+
+                                    // Create UI Element
+                                    const chip = document.createElement('div');
+                                    chip.className = 'bg-emerald-100 text-emerald-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center';
+                                    chip.innerHTML = `
+                                        ${skillName}
+                                        <button type="button" class="ml-1.5 text-emerald-600 hover:text-emerald-900 focus:outline-none">
+                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    `;
+                                    
+                                    // Add remove functionality
+                                    chip.querySelector('button').addEventListener('click', function() {
+                                        removeSkillInternal(skillName, chip);
+                                    });
+
+                                    selectedContainer.appendChild(chip);
+                                    skillInput.value = '';
+                                    suggestionsList.classList.add('hidden');
+                                }
+
+                                function removeSkillInternal(skillName, element) {
+                                    currentSkills = currentSkills.filter(s => s !== skillName);
+                                    updateHiddenInput();
+                                    element.remove();
+                                }
+                                
+                                // Make removeSkill globally available for initial items
+                                window.removeSkill = function(btn, skillName) {
+                                    const chip = btn.closest('div');
+                                    removeSkillInternal(skillName, chip);
+                                };
+
+                                // Function to filter and show suggestions
+                                function showSuggestions(query = '') {
+                                    const filtered = allSkills.filter(skill => 
+                                        skill.toLowerCase().includes(query.toLowerCase()) && !currentSkills.includes(skill)
+                                    );
+
+                                    suggestionsList.innerHTML = '';
+                                    
+                                    if (filtered.length > 0) {
+                                        filtered.forEach(skill => {
+                                            const li = document.createElement('li');
+                                            li.className = 'px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700';
+                                            li.textContent = skill;
+                                            li.addEventListener('click', () => addSkill(skill));
+                                            suggestionsList.appendChild(li);
+                                        });
+                                        suggestionsList.classList.remove('hidden');
+                                    } else {
+                                         // Show specific message if no matches, or valid "Create new" option could go here
+                                         if (query.length > 0) { // Only hide if typing and no match? Or show "Create X"?
+                                             // For now, let's keep it simple: if typing and no match, hide list (user can press enter)
+                                             suggestionsList.classList.add('hidden');
+                                         } else if (allSkills.length > 0) {
+                                             // If query empty but we have skills (that aren't selected), show them?
+                                             // The filter above handles !includes(skill), so if all selected, filtered is empty.
+                                             suggestionsList.classList.add('hidden'); 
+                                         }
+                                    }
+                                }
+
+                                skillInput.addEventListener('input', function() {
+                                    showSuggestions(this.value);
+                                });
+
+                                // Show full list on focus
+                                skillInput.addEventListener('focus', function() {
+                                    showSuggestions(this.value);
+                                });
+
+                                // Prevent list closing when clicking inside
+                                // Already handled by the document click listener logic slightly, but let's Ensure
+                                
+                                // Close suggestions on click outside
+                                document.addEventListener('click', function(e) {
+                                    // If click is NOT on input AND NOT on list
+                                    if (!skillInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                                        suggestionsList.classList.add('hidden');
+                                    }
+                                });
+                            });
+                        </script>
                         
                         <div>
                             <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Years of Experience</label>
@@ -100,7 +231,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Bank Name</label>
-                            <input type="text" name="bankName" value="{{ old('bankName', $user->bankName) }}" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1a8a5f] focus:border-transparent">
+                            <select name="bankName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1a8a5f] focus:border-transparent">
+                                <option value="">Select Bank</option>
+                                @foreach(['Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank', 'Hong Leong Bank', 'AmBank', 'UOB Malaysia', 'Bank Rakyat', 'OCBC Bank', 'HSBC Bank', 'Bank Islam', 'Affin Bank', 'Alliance Bank', 'Standard Chartered', 'Citibank', 'Bank Simpanan Nasional (BSN)', 'Bank Muamalat', 'Agrobank'] as $bank)
+                                    <option value="{{ $bank }}" {{ old('bankName', $user->bankName) == $bank ? 'selected' : '' }}>{{ $bank }}</option>
+                                @endforeach
+                            </select>
+                            @error('bankName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Bank Account Number</label>

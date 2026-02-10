@@ -6,13 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class PerformanceReview extends Model
 {
+    protected $primaryKey = 'reviewID';
+
     protected $fillable = [
-        'facilitator_id',
+        'userID',
         'reviewer_id',
         'event_id',
         'rating',
-        'feedback_comments',
-        'role',
+        'comments',
         'dateSubmitted'
     ];
 
@@ -22,7 +23,7 @@ class PerformanceReview extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'facilitator_id', 'userID'); // The Reviewee
+        return $this->belongsTo(User::class, 'userID', 'userID'); // The Reviewee
     }
 
     public function reviewer()

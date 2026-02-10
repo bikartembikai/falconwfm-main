@@ -10,14 +10,14 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ReviewController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Dashboard Routes
@@ -41,9 +41,33 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/attendance/record', [AttendanceController::class, 'clockin_view'])->name('attendance.clockin_view');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'store'])->name('attendance.clockIn');
     Route::put('/attendance/{id}/clock-out', [AttendanceController::class, 'update'])->name('attendance.clockOut');
+    Route::post('/attendance/{id}/upload-proof', [AttendanceController::class, 'uploadProof'])->name('attendance.uploadProof');
 
-    // Allowances & Leaves
-    Route::resource('allowances', App\Http\Controllers\AllowanceController::class);
+    // Admin Attendance Management
+    Route::get('/admin/attendance', [AttendanceController::class, 'adminIndex'])->name('admin.attendance');
+    Route::put('/admin/attendance/{id}', [AttendanceController::class, 'adminUpdate'])->name('admin.attendance.update');
+
+    // Facilitator Management (Admin)
+    Route::get('/admin/facilitators', [App\Http\Controllers\AdminFacilitatorController::class, 'index'])->name('facilitators.index');
+    Route::post('/admin/facilitators', [App\Http\Controllers\AdminFacilitatorController::class, 'store'])->name('facilitators.store');
+    Route::get('/admin/facilitators/{id}/edit', [App\Http\Controllers\AdminFacilitatorController::class, 'edit'])->name('facilitators.edit');
+    Route::put('/admin/facilitators/{id}', [App\Http\Controllers\AdminFacilitatorController::class, 'update'])->name('facilitators.update');
+    Route::delete('/admin/facilitators/{id}', [App\Http\Controllers\AdminFacilitatorController::class, 'destroy'])->name('facilitators.destroy');
+
+    // Payroll Management (Admin)
+    Route::get('/admin/payroll', [App\Http\Controllers\PaymentController::class, 'payrollIndex'])->name('admin.payroll');
+
+    // Admin Payments
+    Route::get('/admin/payments', [App\Http\Controllers\PaymentController::class, 'index'])->name('admin.payments');
+    Route::put('/admin/payments/{id}', [App\Http\Controllers\PaymentController::class, 'update'])->name('payments.update');
+
+    // Payments (Facilitator)
+    Route::get('/facilitator/payments', [App\Http\Controllers\PaymentController::class, 'facilitatorIndex'])->name('facilitator.payments');
+    Route::post('/facilitator/payments', [App\Http\Controllers\PaymentController::class, 'store'])->name('facilitator.payments.store');
+    
+    // Admin Leave Management
+    Route::get('/admin/leaves', [App\Http\Controllers\LeaveController::class, 'adminIndex'])->name('admin.leaves');
+
     Route::resource('leaves', App\Http\Controllers\LeaveController::class);
 
     // Assignments

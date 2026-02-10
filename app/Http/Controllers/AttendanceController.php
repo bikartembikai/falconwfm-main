@@ -106,4 +106,94 @@ class AttendanceController extends Controller
 
         return back()->with('success', 'Clocked Out Successfully!');
     }
+
+    /**
+     * Upload image proof after clock in
+     */
+    public function uploadProof(Request $request, $id)
+    {
+        $request->validate([
+            'image_proof' => 'required|image|max:5120', // 5MB max
+        ]);
+
+        $assignment = Assignment::findOrFail($id);
+        
+        // Ensure own record
+        if ($assignment->userID !== Auth::id()) {
+            return back()->with('error', 'Unauthorized.');
+        }
+
+        // Ensure already clocked in
+        if (!$assignment->clockInTime) {
+            return back()->with('error', 'Please clock in first.');
+        }
+
+        $path = $request->file('image_proof')->store('attendance_proofs', 'public');
+        
+        $assignment->update([
+            'imageProof' => $path,
+        ]);
+
+        return back()->with('success', 'Proof uploaded successfully!');
+    }
+
+    /**
+     * Admin: View all attendance records
+     */
+    public function adminIndex()
+    {
+        $assignments = Assignment::with(['user', 'event'])
+                                 ->orderBy('created_at', 'desc')
+                                 ->get();
+
+        $totalRecords = $assignments->count();
+        $verifiedRecords = $assignments->where('attendanceStatus', 'verified')->count();
+        $pendingRecords = $assignments->whereIn('attendanceStatus', ['pending', 'present'])->count();
+        $absentRecords = $assignments->where('attendanceStatus', 'absent')->count();
+        $rejectedRecords = $assignments->where('attendanceStatus', 'rejected')->count();
+
+        return view('admin.attendance', compact(
+            'assignments',
+            'totalRecords',
+            'verifiedRecords',
+            'pendingRecords',
+            'absentRecords',
+            'rejectedRecords'
+        ));
+    }
+
+    /**
+     * Admin: Update attendance status
+     */
+    public function adminUpdate(Request $request, $id)
+    {
+        $assignment = Assignment::findOrFail($id);
+
+        $request->validate([
+            'attendanceStatus' => 'required|in:pending,verified,absent,rejected',
+        ]);
+
+        if ($request->attendanceStatus === 'verified' && $assignment->attendanceStatus !== 'verified') {
+            // Check if payment already exists
+            $existingPayment = \App\Models\Payment::where('assignmentID', $assignment->assignmentID)
+                                                  ->where('title', 'like', 'Event Completion Fee%')
+                                                  ->exists();
+
+            if (!$existingPayment) {
+                \App\Models\Payment::create([
+                    'assignmentID' => $assignment->assignmentID,
+                    'title' => 'Event Completion Fee: ' . ($assignment->event->eventName ?? 'Event'),
+                    'amount' => 500.00, // TODO: Retrieve dynamic rate based on event/facilitator
+                    'paymentType' => 'salary',
+                    'paymentStatus' => 'pending',
+                ]);
+            }
+        }
+
+        $assignment->update([
+            'attendanceStatus' => $request->attendanceStatus,
+        ]);
+
+        return back()->with('success', 'Attendance status updated.');
+    }
 }

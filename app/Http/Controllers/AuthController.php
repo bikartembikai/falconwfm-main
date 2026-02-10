@@ -10,7 +10,7 @@ use App\Models\User;
 class AuthController extends Controller
 {
     // Show Login Page
-    public function showLogin()
+    public function showLoginForm()
     {
         return view('auth.login');
     }
@@ -57,7 +57,7 @@ class AuthController extends Controller
     }
 
     // Show Register Page
-    public function showRegister()
+    public function showRegistrationForm()
     {
         return view('auth.register');
     }

@@ -16,10 +16,17 @@ class AssignmentController extends Controller
         $user = \Illuminate\Support\Facades\Auth::user();
         if (!$user) return redirect('/login');
 
-        // fetch assignments (pending, accepted)
+        // fetch assignments (assigned, pending, accepted)
         $assignments = Assignment::where('userID', $user->userID)
-                                 ->with('event')
-                                 ->whereIn('status', ['pending', 'accepted'])
+                                 ->with(['event' => function($q) {
+                                     $q->withCount([
+                                         'assignments as total_assigned',
+                                         'assignments as accepted_count' => function($q) {
+                                             $q->where('status', 'accepted');
+                                         }
+                                     ]);
+                                 }])
+                                 ->whereIn('status', ['assigned', 'pending', 'accepted'])
                                  ->orderBy('dateAssigned', 'desc')
                                  ->get();
         
@@ -81,6 +88,7 @@ class AssignmentController extends Controller
                 'userID' => $facilitator->userID,
                 'role' => 'Facilitator', // Default role
                 'dateAssigned' => now(),
+                'status' => 'pending', // Explicit pending status for tracking
             ]);
             $count++;
         }
@@ -93,5 +101,37 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
         $assignment->delete();
         return back()->with('success', 'Assignment removed.');
+    }
+
+    /**
+     * Accept an assignment (Facilitator action)
+     */
+    public function accept(Assignment $assignment)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        
+        // Ensure the assignment belongs to the current user
+        if ($assignment->userID !== $user->userID) {
+            abort(403);
+        }
+
+        $assignment->update(['status' => 'accepted']);
+        return back()->with('success', 'Assignment accepted successfully.');
+    }
+
+    /**
+     * Decline an assignment (Facilitator action)
+     */
+    public function decline(Assignment $assignment)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        
+        // Ensure the assignment belongs to the current user
+        if ($assignment->userID !== $user->userID) {
+            abort(403);
+        }
+
+        $assignment->update(['status' => 'rejected']);
+        return back()->with('success', 'Assignment declined.');
     }
 }

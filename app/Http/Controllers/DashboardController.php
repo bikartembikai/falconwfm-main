@@ -27,11 +27,6 @@ class DashboardController extends Controller
             // Logic match recent automation: Start <= Now <= End
             $activeEvents = Event::where('status', 'ongoing')->count();
             
-            // Total Revenue - Placeholder or Sum if payment model exists
-            // Assuming no robust payment model yet, hardcode or check PaymentController?
-            // Existing PaymentController exists. Let's start with static/placeholder 
-            // as user didn't request dynamic payments yet, just the dashboard UI.
-            $totalRevenue = 245000; // Placeholder based on image
             
             $avgRating = 4.7; // Placeholder based on image
             
@@ -41,31 +36,39 @@ class DashboardController extends Controller
                                    ->take(4)
                                    ->get();
 
-            // Recent Activities - Mock data as requested
-            $recentActivities = [
-                [
-                    'description' => 'New facilitator Sarah Johnson added',
-                    'time' => '2 hours ago'
-                ],
-                [
-                    'description' => 'Event "Leadership Workshop" assigned',
-                    'time' => '5 hours ago'
-                ],
-                [
-                    'description' => 'Payment processed for Michael Chen',
-                    'time' => '1 day ago'
-                ],
-                [
-                    'description' => 'Leave request approved for Emma Davis',
-                    'time' => '2 days ago'
-                ]
-            ];
+            // Recent Activities - Fetch real data
+            $recentActivities = collect();
+
+            // New facilitators
+            $newFacilitators = User::where('role', 'facilitator')
+                ->orderBy('created_at', 'desc')
+                ->take(3)
+                ->get()
+                ->map(fn($f) => [
+                    'description' => "New facilitator {$f->name} added",
+                    'time' => $f->created_at->diffForHumans()
+                ]);
+            $recentActivities = $recentActivities->merge($newFacilitators);
+
+            // Recent Assignments
+            $recentAssignments = \App\Models\Assignment::with(['event', 'user'])
+                ->orderBy('created_at', 'desc')
+                ->take(3)
+                ->get()
+                ->map(fn($a) => [
+                    'description' => "Event \"{$a->event->eventName}\" assigned to {$a->user->name}",
+                    'time' => $a->created_at->diffForHumans()
+                ]);
+            $recentActivities = $recentActivities->merge($recentAssignments);
+
+            // Sort by time and take 5 most recent
+            // Since 'time' is human-readable, we'll sort using created_at if available or just use the first 5
+            $recentActivities = $recentActivities->take(5)->values()->all();
 
             return view('dashboard.operation_manager', compact(
                 'user', 
                 'totalFacilitators', 
                 'activeEvents', 
-                'totalRevenue', 
                 'avgRating', 
                 'upcomingEvents',
                 'recentActivities'

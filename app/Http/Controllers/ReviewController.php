@@ -17,19 +17,17 @@ class ReviewController extends Controller
         ]);
 
         PerformanceReview::create([
-            'facilitator_id' => $facilitatorId, // The Reviewee
+            'userID' => $facilitatorId, // The Reviewee
             'reviewer_id' => auth()->id(), // The Reviewer
             'event_id' => $request->event_id,
             'rating' => $request->rating,
-            'feedback_comments' => $request->feedback_comments,
-            'date_submitted' => now(),
+            'comments' => $request->feedback_comments,
+            'dateSubmitted' => now(),
         ]);
 
         // Update Average Rating
         $user = \App\Models\User::findOrFail($facilitatorId);
-        // Note: PerformanceReview model 'user' relationship points to reviewee (facilitator_id)
-        // We can query using where('facilitator_id', $facilitatorId)
-        $avg = PerformanceReview::where('facilitator_id', $facilitatorId)->avg('rating');
+        $avg = PerformanceReview::where('userID', $facilitatorId)->avg('rating');
         $user->update(['averageRating' => $avg]);
 
         return back()->with('success', 'Review submitted.');
