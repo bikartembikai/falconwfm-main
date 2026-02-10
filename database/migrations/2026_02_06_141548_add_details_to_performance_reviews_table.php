@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->foreignId('reviewer_id')->nullable()->constrained('users', 'userID')->onDelete('cascade');
-            $table->foreignId('event_id')->nullable()->constrained('events', 'eventID')->onDelete('cascade');
+            $table->foreignId('reviewerID')->nullable()->constrained('users', 'userID')->onDelete('cascade');
+            $table->foreignId('assignmentID')->nullable()->constrained('assignments', 'assignmentID')->onDelete('cascade');
+            $table->foreignId('facilitatorID')->nullable()->constrained('users', 'userID')->onDelete('cascade');
+            $table->dateTime('reviewDate')->nullable();
         });
     }
 
@@ -23,10 +25,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->dropForeign(['reviewer_id']);
-            $table->dropColumn('reviewer_id');
-            $table->dropForeign(['event_id']);
-            $table->dropColumn('event_id');
+            $table->dropForeign(['reviewerID']);
+            $table->dropColumn('reviewerID');
+            $table->dropForeign(['assignmentID']);
+            $table->dropColumn('assignmentID');
+            $table->dropForeign(['facilitatorID']);
+            $table->dropColumn('facilitatorID');
+            $table->dropColumn('reviewDate');
         });
     }
 };

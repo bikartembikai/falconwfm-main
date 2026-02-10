@@ -43,8 +43,8 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call([
-            EventRuleSeeder::class,
-            ComprehensiveDataSeeder::class,
+            RuleSeeder::class,
+            RealFacilitatorSeeder::class,
         ]);
     }
 }

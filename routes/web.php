@@ -68,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
     // Performance Routes
     Route::resource('performance', App\Http\Controllers\PerformanceController::class)->only(['index', 'store']);
     Route::get('/facilitator/reviews', [App\Http\Controllers\PerformanceController::class, 'myReviews'])->name('facilitator.reviews');
+    Route::get('/facilitator/performance', [App\Http\Controllers\PerformanceController::class, 'facilitatorPerformance'])->name('facilitator.performance');
+    Route::post('/facilitator/performance/submit', [App\Http\Controllers\PerformanceController::class, 'submitPeerReview'])->name('facilitator.performance.submit');
     
     // Admin Leave Management
     Route::get('/admin/leaves', [App\Http\Controllers\LeaveController::class, 'adminIndex'])->name('admin.leaves');

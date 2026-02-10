@@ -25,10 +25,10 @@ class AttendanceController extends Controller
         // Find assignment for today
         // We look for an assignment where the Event's startDateTime is today
         $activeAssignment = Assignment::where('userID', $user->userID)
+                            ->where('status', 'accepted') // Only show accepted assignments
                             ->whereHas('event', function($q) use ($today) {
                                 $q->whereDate('startDateTime', $today);
                             })
-                            // ->where('status', 'accepted') // Verify if status check is needed or if 'assigned' is default
                             ->first();
 
         // History: Past assignments (completed or just past dates)

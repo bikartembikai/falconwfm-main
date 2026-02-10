@@ -97,7 +97,7 @@ class EventController extends Controller
         
         $pendingAssignmentCount = $eventsPermStats->count() - $fullyAssignedCount;
         
-        $pendingResponseCount = Assignment::where('status', 'assigned')->count();
+        $pendingResponseCount = Assignment::whereIn('status', ['assigned', 'pending'])->count();
 
         return view('events.index', compact('events', 'categories', 'totalEventsCount', 'scheduledCount', 'ongoingCount', 'completedCount', 'fullyAssignedCount', 'pendingAssignmentCount', 'pendingResponseCount'));
     }

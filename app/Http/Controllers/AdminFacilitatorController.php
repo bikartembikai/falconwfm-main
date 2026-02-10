@@ -86,23 +86,31 @@ class AdminFacilitatorController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'expertise' => 'nullable|string',
             'yearsOfExperience' => 'nullable|integer|min:0',
             'phone' => 'nullable|string',
-            'availabilityStatus' => 'nullable|in:available,busy,unavailable',
+            'skills' => 'nullable|string',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'facilitator',
-            'expertise' => $request->expertise,
-            'yearsOfExperience' => $request->yearsOfExperience ?? 0,
-            'phone' => $request->phone,
-            'availabilityStatus' => $request->availabilityStatus ?? 'available',
+            'experience' => $request->yearsOfExperience ? $request->yearsOfExperience . ' years' : null,
+            'phoneNumber' => $request->phone,
             'joinDate' => now(),
         ]);
+
+        // Sync skills
+        if ($request->filled('skills')) {
+            $skillNames = array_filter(explode(',', $request->skills));
+            $skillIds = [];
+            foreach ($skillNames as $skillName) {
+                $skill = Skill::firstOrCreate(['skillName' => trim($skillName)]);
+                $skillIds[] = $skill->skillID;
+            }
+            $user->skills()->sync($skillIds);
+        }
 
         return redirect()->route('facilitators.index')->with('success', 'Facilitator added successfully.');
     }
@@ -126,23 +134,31 @@ class AdminFacilitatorController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id . ',userID',
-            'expertise' => 'nullable|string',
             'yearsOfExperience' => 'nullable|integer|min:0',
             'phone' => 'nullable|string',
-            'availabilityStatus' => 'nullable|in:available,busy,unavailable',
+            'skills' => 'nullable|string',
         ]);
 
         $facilitator->update([
             'name' => $request->name,
             'email' => $request->email,
-            'expertise' => $request->expertise,
-            'yearsOfExperience' => $request->yearsOfExperience,
-            'phone' => $request->phone,
-            'availabilityStatus' => $request->availabilityStatus,
+            'experience' => $request->yearsOfExperience ? $request->yearsOfExperience . ' years' : null,
+            'phoneNumber' => $request->phone,
         ]);
 
         if ($request->filled('password')) {
             $facilitator->update(['password' => Hash::make($request->password)]);
+        }
+
+        // Sync skills
+        if ($request->filled('skills')) {
+            $skillNames = array_filter(explode(',', $request->skills));
+            $skillIds = [];
+            foreach ($skillNames as $skillName) {
+                $skill = Skill::firstOrCreate(['skillName' => trim($skillName)]);
+                $skillIds[] = $skill->skillID;
+            }
+            $facilitator->skills()->sync($skillIds);
         }
 
         return redirect()->route('facilitators.index')->with('success', 'Facilitator updated successfully.');

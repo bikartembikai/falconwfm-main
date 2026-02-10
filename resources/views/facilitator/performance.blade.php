@@ -14,6 +14,12 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+        <p class="text-red-700">{{ session('error') }}</p>
+    </div>
+    @endif
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-3 gap-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -55,7 +61,7 @@
 
     <!-- Events List -->
     <div class="space-y-6">
-        @forelse($events as $event)
+        @forelse($completedEvents as $event)
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
                 <div class="flex items-start justify-between">
@@ -76,7 +82,7 @@
             </div>
 
             <div class="p-6 space-y-4">
-                @foreach($event->assignments as $assignment)
+                @forelse($event->assignments as $assignment)
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">
@@ -99,7 +105,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Pending
                         </span>
-                        <button onclick="openReviewModal({{ $assignment->assignmentID }}, '{{ $assignment->user->name }}', '{{ $event->eventName }}', '{{ $event->venue }}')" 
+                        <button onclick="openReviewModal({{ $assignment->assignmentID }}, '{{ addslashes($assignment->user->name) }}', '{{ addslashes($event->eventName) }}', '{{ addslashes($event->venue ?? 'TBA') }}')" 
                                 class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Submit Review
@@ -107,13 +113,15 @@
                         @endif
                     </div>
                 </div>
-                @endforeach
+                @empty
+                <p class="text-center text-gray-500 py-4">No co-facilitators in this event.</p>
+                @endforelse
             </div>
         </div>
         @empty
         <div class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
             <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-            <p class="text-gray-500">No events with assignments found.</p>
+            <p class="text-gray-500">No completed events found. Complete events to review your co-facilitators.</p>
         </div>
         @endforelse
     </div>
@@ -137,7 +145,7 @@
                 <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm" id="modalFacilitatorInitials"></div>
                 <div>
                     <p class="font-semibold text-gray-900" id="modalFacilitatorName"></p>
-                    <p class="text-xs text-gray-500">Lead Facilitator</p>
+                    <p class="text-xs text-gray-500">Co-Facilitator</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -150,7 +158,7 @@
             </div>
         </div>
 
-        <form action="{{ route('performance.store') }}" method="POST">
+        <form action="{{ route('facilitator.performance.submit') }}" method="POST">
             @csrf
             <input type="hidden" name="assignment_id" id="modalAssignmentId">
             
@@ -199,7 +207,7 @@ function openReviewModal(assignmentId, name, eventName, venue) {
     document.getElementById('modalFacilitatorName').textContent = name;
     document.getElementById('modalFacilitatorInitials').textContent = name.substring(0, 2).toUpperCase();
     document.getElementById('modalEventName').textContent = eventName;
-    document.getElementById('modalEventVenue').textContent = venue || 'TBA';
+    document.getElementById('modalEventVenue').textContent = venue;
     document.getElementById('reviewModal').classList.remove('hidden');
     setRating(0); // Reset rating
 }

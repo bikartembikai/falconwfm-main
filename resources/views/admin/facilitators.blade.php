@@ -61,7 +61,7 @@
                 <label class="text-sm font-medium text-gray-700 mb-1 block">Search</label>
                 <div class="relative max-w-md">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="text" id="searchInput" placeholder="Search by name, email, or specialization..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <input type="text" id="searchInput" placeholder="Search by name or email" class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
                 </div>
             </div>
             <div class="flex gap-3 items-end">
@@ -96,7 +96,7 @@
             $skillsString = $facilitator->skills->pluck('skillName')->implode(', ');
             $latestComments = $facilitator->reviews->whereNotNull('comments')->where('comments', '!=', '')->sortByDesc('created_at')->take(2);
         @endphp
-        <div class="facilitator-card bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-name="{{ strtolower($facilitator->name) }}" data-email="{{ strtolower($facilitator->email) }}" data-status="{{ $facilitator->dynamicStatus }}" data-specialization="{{ strtolower($facilitator->expertise ?? '') }}">
+        <div class="facilitator-card bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-name="{{ strtolower($facilitator->name) }}" data-email="{{ strtolower($facilitator->email) }}" data-status="{{ $facilitator->dynamicStatus }}">
             <!-- Header -->
             <div class="mb-4">
                 <h3 class="font-bold text-lg text-gray-900">{{ $facilitator->name }}</h3>
@@ -160,6 +160,7 @@
                         "id" => $facilitator->userID,
                         "name" => $facilitator->name,
                         "email" => $facilitator->email,
+                        "expertise" => $facilitator->expertise ?? "Not specified",
                         "experience" => $facilitator->yearsOfExperience ?? 0,
                         "phone" => $facilitator->phone ?? "",
                         "skills" => $skillsString,
@@ -218,15 +219,17 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
+
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Experience</p>
                         <p class="font-semibold text-gray-800" id="viewExperience"></p>
                     </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Phone Number</p>
                         <p class="font-semibold text-gray-800" id="viewPhone"></p>
                     </div>
-                </div>
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Events Assigned</p>
                         <p class="font-semibold text-gray-800" id="viewEvents"></p>
@@ -246,14 +249,6 @@
                 <div>
                     <p class="text-xs text-gray-500 mb-1">Average Rating</p>
                     <p class="font-semibold text-gray-800" id="viewRating"></p>
-                </div>
-
-                <!-- Review Insights -->
-                <div class="border-t border-gray-100 pt-4">
-                    <p class="text-xs text-gray-500 mb-2">Review Insights</p>
-                    <div id="reviewInsights" class="flex flex-wrap gap-2">
-                        <span class="text-gray-400 text-xs">No insights yet</span>
-                    </div>
                 </div>
 
                 <!-- Feedback Section -->
@@ -330,15 +325,9 @@
                         <input type="password" name="password" required placeholder="Enter password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-                            <input type="text" name="expertise" placeholder="e.g., Project Management" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
-                            <input type="number" name="yearsOfExperience" value="0" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                        <input type="number" name="yearsOfExperience" value="0" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
                     </div>
 
                     <div>
@@ -412,8 +401,8 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
-                            <input type="number" name="yearsOfExperience" id="editExperience" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Experience (Years/Description)</label>
+                            <input type="text" name="experience" id="editExperience" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
                         </div>
                     </div>
 
@@ -563,16 +552,17 @@ function openViewModal(btn) {
         const data = JSON.parse(dataAttr);
         console.log('Parsed data:', data);
         
-        // Destructure data for easier use
+        // Destructure data for easier use (mapping to old param names)
         const { 
-            id, name, email, experience, phone, skills, 
+            id, name, email, expertise, experience, phone, skills, 
             status, rating, events, statusReason, reviews: feedbackArr 
         } = data;
         
         document.getElementById('viewFacilitatorId').value = id; // Set hidden input for feedback
     document.getElementById('viewName').textContent = name || 'N/A';
     document.getElementById('viewEmail').textContent = email || 'N/A';
-    document.getElementById('viewExperience').textContent = experience + ' years';
+
+    document.getElementById('viewExperience').textContent = experience;
     document.getElementById('viewPhone').textContent = phone || 'N/A';
     document.getElementById('viewEvents').textContent = events;
     document.getElementById('viewRating').textContent = rating + ' / 5.0';
@@ -602,53 +592,6 @@ function openViewModal(btn) {
     
     // Status reason
     document.getElementById('viewStatusReason').textContent = statusReason || '';
-    
-    // Review Insights - Sentiment Analysis
-    const insightsContainer = document.getElementById('reviewInsights');
-    insightsContainer.innerHTML = '';
-    
-    if (feedbackArr && feedbackArr.length > 0) {
-        const keywords = {
-            positive: ['good', 'great', 'excellent', 'knowledge', 'professional', 'leadership', 
-                      'helpful', 'organized', 'patient', 'motivat', 'inspir', 'religious',
-                      'punctual', 'prepared', 'engaging', 'communicat'],
-            negative: ['lazy', 'late', 'unprepared', 'unprofessional', 'disorganized', 'missing',
-                      'improvement', 'could be', 'needs', 'sometimes', 'arrive']
-        };
-        
-        const found = { positive: new Set(), negative: new Set() };
-        
-        // Extract keywords from all comments
-        feedbackArr.forEach(fb => {
-            const comment = fb.comment.toLowerCase();
-            keywords.positive.forEach(kw => {
-                if (comment.includes(kw)) found.positive.add(kw);
-            });
-            keywords.negative.forEach(kw => {
-                if (comment.includes(kw)) found.negative.add(kw);
-            });
-        });
-        
-        // Display badges
-        if (found.positive.size > 0 || found.negative.size > 0) {
-            found.positive.forEach(keyword => {
-                const badge = document.createElement('span');
-                badge.className = 'px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full';
-                badge.textContent = keyword;
-                insightsContainer.appendChild(badge);
-            });
-            found.negative.forEach(keyword => {
-                const badge = document.createElement('span');
-                badge.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full';
-                badge.textContent = keyword;
-                insightsContainer.appendChild(badge);
-            });
-        } else {
-            insightsContainer.innerHTML = '<span class="text-gray-400 text-xs">No specific keywords found</span>';
-        }
-    } else {
-        insightsContainer.innerHTML = '<span class="text-gray-400 text-xs">No insights yet</span>';
-    }
     
     // Feedback section
     const feedbackContainer = document.getElementById('viewFeedback');
@@ -776,10 +719,9 @@ function filterCards() {
     document.querySelectorAll('.facilitator-card').forEach(card => {
         const name = card.dataset.name;
         const email = card.dataset.email;
-        const spec = card.dataset.specialization;
         const cardStatus = card.dataset.status;
         
-        const matchesQuery = name.includes(query) || email.includes(query) || spec.includes(query);
+        const matchesQuery = name.includes(query) || email.includes(query);
         const matchesStatus = !status || cardStatus === status;
         
         card.style.display = (matchesQuery && matchesStatus) ? '' : 'none';

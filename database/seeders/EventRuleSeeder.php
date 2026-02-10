@@ -15,31 +15,31 @@ class EventRuleSeeder extends Seeder
         $rules = [
             [
                 'eventCategory' => 'TEAM BUILDING',
-                'requiredSkill' => json_encode(['Speaking', 'Medic', 'Leadership', 'Facilitating']),
+                'requiredSkill' => ['Speaking', 'Medic', 'Leadership', 'Facilitating'],
                 'minExperience' => 2,
                 'minRating' => 4,
             ],
             [
                 'eventCategory' => 'TALK',
-                'requiredSkill' => json_encode(['Speaking', 'Leadership', 'Public Speaking', 'Facilitating']),
+                'requiredSkill' => ['Speaking', 'Leadership', 'Public Speaking', 'Facilitating'],
                 'minExperience' => 3,
                 'minRating' => 4,
             ],
             [
                 'eventCategory' => 'CAMP',
-                'requiredSkill' => json_encode(['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics']),
+                'requiredSkill' => ['Medic', 'Speaking', 'Leadership', 'Hiking', 'Trekking', 'Motivation', 'Religious', 'Survival', 'Logistics'],
                 'minExperience' => 1,
                 'minRating' => 3,
             ],
             [
                 'eventCategory' => 'WORKSHOP',
-                'requiredSkill' => json_encode(['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics']),
+                'requiredSkill' => ['Public Speaking', 'Teaching', 'Survival', 'Archery', 'Facilitating', 'Time Management', 'Leadership', 'Organization Management', 'Logistics'],
                 'minExperience' => 2,
                 'minRating' => 3,
             ],
             [
                 'eventCategory' => 'HOLIDAY',
-                'requiredSkill' => json_encode(['Medic', 'Swimming', 'Logistics']),
+                'requiredSkill' => ['Medic', 'Swimming', 'Logistic'],
                 'minExperience' => 0,
                 'minRating' => 0,
             ],
