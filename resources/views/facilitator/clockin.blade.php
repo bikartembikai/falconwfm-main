@@ -152,7 +152,16 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $record->clockOutTime ? \Carbon\Carbon::parse($record->clockOutTime)->format('H:i') : '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ $record->hours_worked ?? '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $record->attendanceStatus == 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
+                                @php
+                                    $statusColor = match($record->attendanceStatus) {
+                                        'verified' => 'bg-green-100 text-green-800 border-green-200',
+                                        'pending' => 'bg-orange-100 text-orange-800 border-orange-200',
+                                        'absent' => 'bg-red-100 text-red-800 border-red-200',
+                                        'rejected' => 'bg-red-100 text-red-800 border-red-200',
+                                        default => 'bg-gray-100 text-gray-800 border-gray-200'
+                                    };
+                                @endphp
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full border {{ $statusColor }}">
                                     {{ ucfirst($record->attendanceStatus) }}
                                 </span>
                             </td>

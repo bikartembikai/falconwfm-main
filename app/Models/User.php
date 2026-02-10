@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasMany(Assignment::class, 'userID', 'userID');
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(PerformanceReview::class, 'userID', 'userID');
+    }
+
     public function leaves()
     {
         return $this->hasMany(Leave::class, 'userID', 'userID');

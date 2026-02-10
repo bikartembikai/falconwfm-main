@@ -131,7 +131,7 @@
                                 $attStatus = $assignment->attendanceStatus ?? 'pending';
                                 $attColor = match($attStatus) {
                                     'verified' => 'text-green-600',
-                                    'present', 'pending' => 'text-orange-500',
+                                    'pending' => 'text-orange-500',
                                     'absent' => 'text-gray-600',
                                     'rejected' => 'text-red-600',
                                     default => 'text-gray-500'

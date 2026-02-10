@@ -149,10 +149,10 @@
                             @if($payment->paymentStatus === 'paid')
                                 <span class="text-gray-500 text-sm font-medium">Completed</span>
                             @elseif($payment->paymentStatus === 'approved')
-                                <form action="{{ route('payments.update', $payment->paymentID) }}" method="POST" enctype="multipart/form-data" class="inline">
+                                <form action="{{ route('payments.update', $payment->paymentID) }}" method="POST" enctype="multipart/form-data" class="inline" onsubmit="return confirm('Are you sure you want to pay this amount?');">
                                     @csrf
                                     @method('PUT')
-                                    <input type="file" name="payment_proof" id="proof_{{ $payment->paymentID }}" class="hidden" accept="image/*,application/pdf" onchange="this.form.submit()">
+                                    <input type="file" name="payment_proof" id="proof_{{ $payment->paymentID }}" class="hidden" accept="image/*,application/pdf" onchange="if(confirm('Proceeed with payment upload?')) this.form.submit()">
                                     <button type="button" onclick="document.getElementById('proof_{{ $payment->paymentID }}').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         Pay
@@ -270,7 +270,7 @@ function openPaymentProofModal(facilitator, eventName, amount, paymentDate, proo
     document.getElementById('paymentModalSubtitle').textContent = facilitator + ' - ' + eventName;
     document.getElementById('paymentModalFacilitator').textContent = facilitator;
     document.getElementById('paymentModalEvent').textContent = eventName;
-    document.getElementById('paymentModalAmount').textContent = '₱ ' + amount;
+    document.getElementById('paymentModalAmount').textContent = '$ ' + amount;
     document.getElementById('paymentModalDate').textContent = paymentDate;
     document.getElementById('downloadProofLink').href = proofUrl;
     

@@ -2,37 +2,48 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PerformanceReview extends Model
 {
-    protected $primaryKey = 'reviewID';
+    use HasFactory;
 
+    protected $primaryKey = 'reviewID';
+    
     protected $fillable = [
         'userID',
-        'reviewer_id',
-        'event_id',
         'rating',
         'comments',
-        'dateSubmitted'
+        'dateSubmitted',
     ];
 
     protected $casts = [
-        'dateSubmitted' => 'date',
+        'dateSubmitted' => 'datetime',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'userID', 'userID'); // The Reviewee
+        return $this->belongsTo(User::class, 'userID', 'userID');
     }
 
-    public function reviewer()
+    protected static function booted()
     {
-        return $this->belongsTo(User::class, 'reviewer_id', 'userID'); // The Reviewer
-    }
+        static::saved(function ($review) {
+            $user = $review->user;
+            if ($user) {
+                // Determine new average
+                $avg = $user->reviews()->avg('rating');
+                $user->update(['averageRating' => $avg]);
+            }
+        });
 
-    public function event()
-    {
-        return $this->belongsTo(Event::class, 'event_id', 'eventID');
+        static::deleted(function ($review) {
+            $user = $review->user;
+            if ($user) {
+                $avg = $user->reviews()->avg('rating') ?? 0;
+                $user->update(['averageRating' => $avg]);
+            }
+        });
     }
 }

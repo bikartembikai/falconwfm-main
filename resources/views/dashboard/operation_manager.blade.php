@@ -9,7 +9,7 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <!-- Total Facilitators -->
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex justify-between items-start">
             <div>
@@ -38,16 +38,30 @@
             </div>
         </div>
 
-        <!-- Avg Rating -->
+        <!-- Pending Leave Requests -->
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex justify-between items-start">
             <div>
-                <p class="text-sm font-medium text-gray-500">Avg. Rating</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">{{ $avgRating }}</p>
-                <div class="mt-2 text-xs text-gray-500">+0.3 improvement</div>
+                <p class="text-sm font-medium text-gray-500">Pending Leave Requests</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ $pendingLeaves }}</p>
+                <div class="mt-2 text-xs text-gray-500">Requires attention</div>
             </div>
             <div class="p-2 bg-orange-50 rounded-lg">
                 <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Pending Payments -->
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Pending Payments</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ $pendingPayments }}</p>
+                <div class="mt-2 text-xs text-gray-500">Requires attention</div>
+            </div>
+            <div class="p-2 bg-red-50 rounded-lg">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
                 </svg>
             </div>
         </div>

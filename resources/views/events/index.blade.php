@@ -168,8 +168,10 @@
                 <select name="status" onchange="this.form.submit()" class="block w-full rounded-md border-0 bg-slate-50 py-2 pl-3 ring-1 ring-inset ring-gray-300 sm:text-sm">
                     <option value="">All Status</option>
                     @if(Auth::user()->role === 'operation_manager')
+                        <option value="Upcoming" {{ request('status') == 'Upcoming' ? 'selected' : '' }}>Upcoming</option>
                         <option value="Pending Assignment" {{ request('status') == 'Pending Assignment' ? 'selected' : '' }}>Pending Assignment</option>
                         <option value="Fully Assigned" {{ request('status') == 'Fully Assigned' ? 'selected' : '' }}>Fully Assigned</option>
+                        <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
                     @else
                         <option value="Upcoming" {{ request('status') == 'Upcoming' ? 'selected' : '' }}>Upcoming</option>
                         <option value="Ongoing" {{ request('status') == 'Ongoing' ? 'selected' : '' }}>Ongoing</option>

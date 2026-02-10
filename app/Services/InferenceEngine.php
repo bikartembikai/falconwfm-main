@@ -48,7 +48,7 @@ class InferenceEngine
         
         // Load Facts (Facilitators with History)
         $facilitators = User::where('role', 'facilitator')
-                            ->with(['assignments.event', 'leaves', 'skills'])
+                            ->with(['assignments.event', 'leaves', 'skills', 'reviews'])
                             ->get();
         
         $results = [];
@@ -78,6 +78,20 @@ class InferenceEngine
             $rating = $facil->averageRating ?? 0;
             $suitabilityScore = ($rating * 2) + $skillMatchScore;
 
+            // Get latest 2 anonymous feedback comments
+            $feedback = $facil->reviews
+                ->whereNotNull('comments')
+                ->where('comments', '!=', '')
+                ->sortByDesc('created_at')
+                ->take(2)
+                ->map(fn($r) => [
+                    'comment' => $r->comments,
+                    'rating' => $r->rating,
+                    'date' => $r->created_at->diffForHumans(),
+                ])
+                ->values()
+                ->toArray();
+
             $results[] = [
                 'id' => $facil->userID, // PK is userID
                 'user_id' => $facil->userID, 
@@ -90,7 +104,8 @@ class InferenceEngine
                 'experience' => $facil->experience,
                 'join_date' => $facil->joinDate,
                 'status' => $status, 
-                'reason' => $reason
+                'reason' => $reason,
+                'feedback' => $feedback,
             ];
         }
 

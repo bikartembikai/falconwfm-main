@@ -95,16 +95,33 @@
                     @csrf
                     <input type="hidden" name="event_id" value="{{ $event->eventID }}">
                     
+                    @if($event->assignments->count() >= $event->quota)
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    This event has reached its facilitator quota. No further assignments can be made.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                         @foreach($facilitators as $facil)
                         <div class="relative flex items-start p-4 border rounded-lg hover:bg-slate-50 transition-colors {{ $facil['status'] === 'busy' ? 'bg-gray-50 opacity-75' : 'border-gray-200' }}">
                             <div class="flex items-center h-5">
                                 <input id="facil_{{ $facil['id'] }}" name="facilitator_ids[]" value="{{ $facil['id'] }}" type="checkbox" 
-                                       {{ $facil['status'] !== 'available' ? 'disabled' : '' }}
+                                       {{ ($facil['status'] !== 'available' || $event->assignments->count() >= $event->quota) ? 'disabled' : '' }}
                                        class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50">
                             </div>
                             <div class="ml-3 flex-grow">
-                                <label for="facil_{{ $facil['id'] }}" class="font-medium text-gray-900">{{ $facil['name'] }}</label>
+                                <label for="facil_{{ $facil['id'] }}" class="font-medium text-gray-900 {{ $event->assignments->count() >= $event->quota ? 'text-gray-500' : '' }}">{{ $facil['name'] }}</label>
                                 <div class="text-sm text-gray-500">
                                     {{ $facil['experience'] }} years experience • Rating: {{ number_format($facil['rating'], 1) }}
                                 </div>
@@ -135,12 +152,32 @@
                                 @endif
                             </div>
                         </div>
+                        {{-- Anonymous Feedback --}}
+                        @if(!empty($facil['feedback']))
+                        <div class="ml-7 mt-2 space-y-1">
+                            @foreach($facil['feedback'] as $fb)
+                            <div class="bg-gray-50 rounded-lg px-3 py-1.5">
+                                <p class="text-xs text-gray-600 italic">"{{ Str::limit($fb['comment'], 60) }}"</p>
+                                <div class="flex items-center justify-between mt-0.5">
+                                    <div class="flex">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <svg class="w-2.5 h-2.5 {{ $i <= $fb['rating'] ? 'text-yellow-400' : 'text-gray-300' }} fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                        @endfor
+                                    </div>
+                                    <span class="text-[9px] text-gray-400">{{ $fb['date'] }}</span>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        @endif
                         @endforeach
                     </div>
 
                     <div class="mt-6 border-t border-gray-100 pt-4 flex justify-end">
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Confirm Assignment
+                        <button type="submit" 
+                                {{ $event->assignments->count() >= $event->quota ? 'disabled' : '' }}
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {{ $event->assignments->count() >= $event->quota ? 'Assignment Closed' : 'Confirm Assignment' }}
                         </button>
                     </div>
                 </form>
@@ -165,8 +202,10 @@
                     </p>
                 </div>
 
-                <button type="button" onclick="autoSelectRecommended()" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                    Generate Facilitators
+                <button type="button" onclick="autoSelectRecommended()" 
+                        {{ $event->assignments->count() >= $event->quota ? 'disabled' : '' }}
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ $event->assignments->count() >= $event->quota ? 'Event Full' : 'Generate Facilitators' }}
                 </button>
             </div>
         </div>

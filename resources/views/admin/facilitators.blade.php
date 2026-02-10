@@ -86,23 +86,28 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="facilitatorCards">
         @forelse($facilitators as $facilitator)
         @php
-            $statusColor = match($facilitator->availabilityStatus ?? 'available') {
+            $statusColor = match($facilitator->dynamicStatus) {
                 'available' => 'bg-green-100 text-green-700',
                 'busy' => 'bg-yellow-100 text-yellow-700',
                 'unavailable' => 'bg-red-100 text-red-700',
                 default => 'bg-gray-100 text-gray-700'
             };
-            $eventsAssigned = $facilitator->assignments()->count();
+            $eventsAssigned = $facilitator->assignments_count;
             $skillsString = $facilitator->skills->pluck('skillName')->implode(', ');
+            $latestComments = $facilitator->reviews->whereNotNull('comments')->where('comments', '!=', '')->sortByDesc('created_at')->take(2);
         @endphp
-        <div class="facilitator-card bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-name="{{ strtolower($facilitator->name) }}" data-email="{{ strtolower($facilitator->email) }}" data-status="{{ $facilitator->availabilityStatus ?? 'available' }}" data-specialization="{{ strtolower($facilitator->expertise ?? '') }}">
+        <div class="facilitator-card bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-name="{{ strtolower($facilitator->name) }}" data-email="{{ strtolower($facilitator->email) }}" data-status="{{ $facilitator->dynamicStatus }}" data-specialization="{{ strtolower($facilitator->expertise ?? '') }}">
             <!-- Header -->
             <div class="mb-4">
                 <h3 class="font-bold text-lg text-gray-900">{{ $facilitator->name }}</h3>
-                <p class="text-gray-500 text-sm">{{ $facilitator->expertise ?? 'Not specified' }}</p>
-                <span class="inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full {{ $statusColor }}">
-                    {{ $facilitator->availabilityStatus ?? 'available' }}
-                </span>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="inline-block px-3 py-1 text-xs font-medium rounded-full {{ $statusColor }}">
+                        {{ $facilitator->dynamicStatus }}
+                    </span>
+                    @if($facilitator->statusReason)
+                        <span class="text-xs text-gray-500 italic">{{ $facilitator->statusReason }}</span>
+                    @endif
+                </div>
             </div>
 
             <!-- Details -->
@@ -116,30 +121,60 @@
                     {{ $facilitator->yearsOfExperience ?? 0 }} years experience
                 </div>
                 <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                    Rating: {{ number_format($facilitator->averageRating ?? 0, 1) }} / 5.0
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     {{ $eventsAssigned }} events assigned
                 </div>
             </div>
 
-            <!-- Expertise Tags -->
-            <div class="mb-4">
-                <p class="text-xs text-gray-500 mb-2">Expertise</p>
-                <div class="flex flex-wrap gap-2">
-                    @if($facilitator->expertise)
-                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">{{ $facilitator->expertise }}</span>
-                    @else
-                    <span class="text-gray-400 text-xs">No expertise listed</span>
-                    @endif
+            <!-- Feedback Comments (Anonymous, Facebook-style) -->
+            @if($latestComments->count() > 0)
+            <div class="mb-4 border-t border-gray-100 pt-3">
+                <p class="text-xs text-gray-500 font-medium mb-2">💬 Recent Feedback</p>
+                <div class="space-y-2">
+                    @foreach($latestComments as $comment)
+                    <div class="bg-gray-50 rounded-lg px-3 py-2">
+                        <p class="text-sm text-gray-700 italic">"{{ Str::limit($comment->comments, 80) }}"</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <div class="flex text-yellow-400">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <svg class="w-3 h-3 {{ $i <= $comment->rating ? 'fill-current' : 'text-gray-300 fill-current' }}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                @endfor
+                            </div>
+                            <span class="text-[10px] text-gray-400">{{ $comment->created_at->diffForHumans() }}</span>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
             </div>
+            @endif
 
             <!-- Action Buttons -->
             <div class="flex gap-2 pt-4 border-t border-gray-100">
-                <button onclick="openViewModal({{ $facilitator->userID }}, '{{ addslashes($facilitator->name) }}', '{{ $facilitator->email }}', '{{ addslashes($facilitator->expertise ?? '') }}', {{ $facilitator->yearsOfExperience ?? 0 }}, '{{ $facilitator->phone ?? '' }}', '{{ addslashes($skillsString) }}', '{{ $facilitator->availabilityStatus ?? 'available' }}', {{ number_format($facilitator->averageRating ?? 0, 1) }}, {{ $eventsAssigned }})" class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">
+                <button 
+                    onclick="openViewModal(this)"
+                    data-facilitator='{!! json_encode([
+                        "id" => $facilitator->userID,
+                        "name" => $facilitator->name,
+                        "email" => $facilitator->email,
+                        "expertise" => $facilitator->expertise ?? "Not specified",
+                        "experience" => $facilitator->yearsOfExperience ?? 0,
+                        "phone" => $facilitator->phone ?? "",
+                        "skills" => $skillsString,
+                        "status" => $facilitator->dynamicStatus,
+                        "rating" => number_format($facilitator->averageRating ?? 0, 1),
+                        "events" => $eventsAssigned,
+                        "statusReason" => $facilitator->statusReason ?? "",
+                        "reviews" => $facilitator->reviews->whereNotNull("comments")->where("comments","!=","")->sortByDesc("created_at")->values()->map(fn($r) => ["comment" => $r->comments, "rating" => $r->rating, "date" => $r->created_at->diffForHumans()])
+                    ], JSON_HEX_APOS|JSON_HEX_QUOT) !!}'
+                    class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     View
                 </button>
-                <button onclick="openEditModal({{ $facilitator->userID }}, '{{ addslashes($facilitator->name) }}', '{{ $facilitator->email }}', '{{ addslashes($facilitator->expertise ?? '') }}', {{ $facilitator->yearsOfExperience ?? 0 }}, '{{ $facilitator->phone ?? '' }}', '{{ addslashes($skillsString) }}', '{{ $facilitator->availabilityStatus ?? 'available' }}')" class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-green-500 text-green-600 rounded-lg text-sm hover:bg-green-50">
+                <button onclick="openEditModal({{ $facilitator->userID }}, '{{ addslashes($facilitator->name) }}', '{{ $facilitator->email }}', {{ $facilitator->yearsOfExperience ?? 0 }}, '{{ $facilitator->phone ?? '' }}', '{{ addslashes($skillsString) }}', '{{ $facilitator->dynamicStatus }}')" class="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-green-500 text-green-600 rounded-lg text-sm hover:bg-green-50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     Edit
                 </button>
@@ -185,7 +220,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Specialization</p>
+                        <p class="text-xs text-gray-500 mb-1">Expertise/Specialization</p>
                         <p class="font-semibold text-gray-800" id="viewExpertise"></p>
                     </div>
                     <div>
@@ -207,13 +242,49 @@
                     <p class="text-xs text-gray-500 mb-2">Skills</p>
                     <div class="flex flex-wrap gap-2" id="viewSkills"></div>
                 </div>
-                <div>
-                    <p class="text-xs text-gray-500 mb-1">Availability Status</p>
-                    <span id="viewStatus" class="inline-block px-3 py-1 text-xs font-medium rounded-full"></span>
+                <div class="flex items-center gap-3">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Availability Status</p>
+                        <span id="viewStatus" class="inline-block px-3 py-1 text-xs font-medium rounded-full"></span>
+                    </div>
+                    <span id="viewStatusReason" class="text-xs text-gray-500 italic mt-4"></span>
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 mb-1">Average Rating</p>
                     <p class="font-semibold text-gray-800" id="viewRating"></p>
+                </div>
+
+                <!-- Feedback Section -->
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-sm font-semibold text-gray-700 mb-3">💬 Feedback</p>
+                    <div id="viewFeedback" class="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                        <p class="text-gray-400 text-sm">No feedback yet.</p>
+                    </div>
+                </div>
+
+                <!-- Submit Feedback Form -->
+                <div class="border-t border-gray-100 pt-4">
+                    <form action="{{ route('performance.store') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="user_id" id="viewFacilitatorId">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">📝 Submit Feedback</p>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-600 mb-1">Rating</label>
+                            <div class="flex gap-1" id="viewStarRating">
+                                @for($s = 1; $s <= 5; $s++)
+                                <button type="button" onclick="setViewRating({{ $s }})" class="view-star-btn text-gray-300 hover:text-yellow-400 transition-colors">
+                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                </button>
+                                @endfor
+                            </div>
+                            <input type="hidden" name="rating" id="viewRatingInput" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-600 mb-1">Comment</label>
+                            <textarea name="comments" rows="2" placeholder="Your feedback..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg text-sm">Submit Feedback</button>
+                    </form>
                 </div>
             </div>
 
@@ -338,10 +409,6 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-                            <input type="text" name="expertise" id="editExpertise" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
                             <input type="number" name="yearsOfExperience" id="editExperience" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
@@ -485,7 +552,22 @@ editSkillInput.addEventListener('keydown', function(e) {
 });
 
 // View Modal
-function openViewModal(id, name, email, expertise, experience, phone, skills, status, rating, events) {
+function openViewModal(btn) {
+    try {
+        console.log('openViewModal called', btn);
+        const dataAttr = btn.getAttribute('data-facilitator');
+        console.log('data-facilitator attribute:', dataAttr);
+        
+        const data = JSON.parse(dataAttr);
+        console.log('Parsed data:', data);
+        
+        // Destructure data for easier use (mapping to old param names)
+        const { 
+            id, name, email, expertise, experience, phone, skills, 
+            status, rating, events, statusReason, reviews: feedbackArr 
+        } = data;
+        
+        document.getElementById('viewFacilitatorId').value = id; // Set hidden input for feedback
     document.getElementById('viewName').textContent = name || 'N/A';
     document.getElementById('viewEmail').textContent = email || 'N/A';
     document.getElementById('viewExpertise').textContent = expertise || 'Not specified';
@@ -517,11 +599,57 @@ function openViewModal(id, name, email, expertise, experience, phone, skills, st
         (status === 'available' ? 'bg-green-100 text-green-700' : 
          status === 'busy' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
     
+    // Status reason
+    document.getElementById('viewStatusReason').textContent = statusReason || '';
+    
+    // Feedback section
+    const feedbackContainer = document.getElementById('viewFeedback');
+    feedbackContainer.innerHTML = '';
+    if (feedbackArr && feedbackArr.length > 0) {
+        feedbackArr.forEach(fb => {
+            const div = document.createElement('div');
+            div.className = 'bg-gray-50 rounded-lg px-3 py-2';
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += '<svg class="w-3 h-3 ' + (i <= fb.rating ? 'text-yellow-400' : 'text-gray-300') + ' fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>';
+            }
+            div.innerHTML = `
+                <p class="text-sm text-gray-700 italic">"${fb.comment}"</p>
+                <div class="flex items-center justify-between mt-1">
+                    <div class="flex">${stars}</div>
+                    <span class="text-[10px] text-gray-400">${fb.date}</span>
+                </div>
+            `;
+            feedbackContainer.appendChild(div);
+        });
+    } else {
+        feedbackContainer.innerHTML = '<p class="text-gray-400 text-sm">No feedback yet.</p>';
+    }
+    
     document.getElementById('viewModal').classList.remove('hidden');
+    console.log('Modal opened successfully');
+    } catch (error) {
+        console.error('Error opening view modal:', error);
+        alert('Error opening modal: ' + error.message + '. Please check the browser console for details.');
+    }
 }
 
 function closeViewModal() {
     document.getElementById('viewModal').classList.add('hidden');
+}
+
+// Star rating for inline feedback form in View modal
+function setViewRating(val) {
+    document.getElementById('viewRatingInput').value = val;
+    document.querySelectorAll('#viewStarRating .view-star-btn').forEach((btn, idx) => {
+        if (idx < val) {
+            btn.classList.remove('text-gray-300');
+            btn.classList.add('text-yellow-400');
+        } else {
+            btn.classList.remove('text-yellow-400');
+            btn.classList.add('text-gray-300');
+        }
+    });
 }
 
 // Add Modal
@@ -537,14 +665,41 @@ function closeAddModal() {
 }
 
 // Edit Modal
-function openEditModal(id, name, email, expertise, experience, phone, skills, status) {
+function openEditModal(id, name, email, experience, phone, skills, status) {
     document.getElementById('editForm').action = '/admin/facilitators/' + id;
     document.getElementById('editName').value = name;
     document.getElementById('editEmail').value = email;
-    document.getElementById('editExpertise').value = expertise;
     document.getElementById('editExperience').value = experience;
     document.getElementById('editPhone').value = phone;
     document.getElementById('editStatus').value = status;
+    
+    // Lock availability if busy
+    const statusSelect = document.getElementById('editStatus');
+    const hiddenStatus = document.getElementById('editHiddenStatus');
+    
+    if (status === 'busy') {
+        statusSelect.disabled = true;
+        statusSelect.title = "Cannot change status while Busy (Clashing Event)";
+        // Create/Update hidden input if not exists (Assume we add it to HTML or manage locally)
+        // Simplest: Check if hidden input exists, if not create it
+        if (!hiddenStatus) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'availabilityStatus';
+            input.id = 'editHiddenStatus';
+            input.value = status;
+            document.getElementById('editForm').appendChild(input);
+        } else {
+            hiddenStatus.value = status;
+            hiddenStatus.disabled = false;
+        }
+    } else {
+        statusSelect.disabled = false;
+        statusSelect.title = "";
+        if (hiddenStatus) {
+            hiddenStatus.disabled = true; // Disable so it doesn't conflict
+        }
+    }
     document.getElementById('editPassword').value = '';
     
     // Setup skills
@@ -587,6 +742,7 @@ function filterCards() {
 document.getElementById('viewModal').addEventListener('click', function(e) { if (e.target === this) closeViewModal(); });
 document.getElementById('addModal').addEventListener('click', function(e) { if (e.target === this) closeAddModal(); });
 document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
+document.getElementById('reviewModal').addEventListener('click', function(e) { if (e.target === this) closeReviewModal(); });
 
 // Hide suggestions on click outside
 document.addEventListener('click', function(e) {

@@ -81,7 +81,7 @@ class AttendanceController extends Controller
 
         $assignment->update([
             'clockInTime' => now(),
-            'attendanceStatus' => 'present',
+            'attendanceStatus' => 'pending',
             'imageProof' => $path,
         ]);
 
@@ -101,7 +101,7 @@ class AttendanceController extends Controller
 
         $assignment->update([
             'clockOutTime' => now(),
-            'attendanceStatus' => 'completed', // Or separate status? Migration has 'attendanceStatus'
+            // Keep attendanceStatus as 'pending' - admin will verify
         ]);
 
         return back()->with('success', 'Clocked Out Successfully!');
@@ -148,7 +148,7 @@ class AttendanceController extends Controller
 
         $totalRecords = $assignments->count();
         $verifiedRecords = $assignments->where('attendanceStatus', 'verified')->count();
-        $pendingRecords = $assignments->whereIn('attendanceStatus', ['pending', 'present'])->count();
+        $pendingRecords = $assignments->where('attendanceStatus', 'pending')->count();
         $absentRecords = $assignments->where('attendanceStatus', 'absent')->count();
         $rejectedRecords = $assignments->where('attendanceStatus', 'rejected')->count();
 

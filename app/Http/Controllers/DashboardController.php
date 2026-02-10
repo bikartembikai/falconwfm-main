@@ -28,7 +28,8 @@ class DashboardController extends Controller
             $activeEvents = Event::where('status', 'ongoing')->count();
             
             
-            $avgRating = 4.7; // Placeholder based on image
+            $pendingLeaves = \App\Models\Leave::where('status', 'pending')->count();
+            $pendingPayments = \App\Models\Payment::where('paymentStatus', 'pending')->count();
             
             // Upcoming Events
             $upcomingEvents = Event::where('status', 'upcoming')
@@ -69,7 +70,8 @@ class DashboardController extends Controller
                 'user', 
                 'totalFacilitators', 
                 'activeEvents', 
-                'avgRating', 
+                'pendingLeaves', 
+                'pendingPayments',
                 'upcomingEvents',
                 'recentActivities'
             ));

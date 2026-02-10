@@ -29,7 +29,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Facilitator Specific Routes
     Route::get('/facilitator/dashboard', [FacilitatorController::class, 'dashboard'])->name('facilitator.dashboard');
-    Route::get('/facilitator/reviews', [FacilitatorController::class, 'reviews'])->name('facilitator.reviews');
+
     Route::get('/facilitator/history', [FacilitatorController::class, 'history'])->name('facilitator.history');
     
     // Profile Management
@@ -64,6 +64,10 @@ Route::middleware(['auth'])->group(function () {
     // Payments (Facilitator)
     Route::get('/facilitator/payments', [App\Http\Controllers\PaymentController::class, 'facilitatorIndex'])->name('facilitator.payments');
     Route::post('/facilitator/payments', [App\Http\Controllers\PaymentController::class, 'store'])->name('facilitator.payments.store');
+
+    // Performance Routes
+    Route::resource('performance', App\Http\Controllers\PerformanceController::class)->only(['index', 'store']);
+    Route::get('/facilitator/reviews', [App\Http\Controllers\PerformanceController::class, 'myReviews'])->name('facilitator.reviews');
     
     // Admin Leave Management
     Route::get('/admin/leaves', [App\Http\Controllers\LeaveController::class, 'adminIndex'])->name('admin.leaves');
